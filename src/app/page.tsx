@@ -47,7 +47,7 @@ export default function HomePage() {
           思考圖表決統計
         </h1>
         <p className="max-w-2xl text-slate-400">
-          助教可透過拍照辨識或手動輸入，快速彙整各組思考圖上的紅勾與綠勾票數。
+          助教可透過拍照辨識或手動輸入，快速彙整各組思考圖上的紅勾與綠勾票數；講師可在講師視圖即時查看各題統計結果。
         </p>
       </header>
 

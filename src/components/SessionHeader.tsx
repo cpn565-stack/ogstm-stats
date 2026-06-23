@@ -3,11 +3,16 @@ import Link from "next/link";
 interface SessionHeaderProps {
   sessionId: string;
   sessionName: string;
-  active?: "dashboard" | "manual" | "photo";
+  active?: "dashboard" | "manual" | "photo" | "present";
 }
 
 const tabs = [
   { key: "dashboard", label: "彙整", href: (id: string) => `/session/${id}` },
+  {
+    key: "present",
+    label: "講師視圖",
+    href: (id: string) => `/session/${id}/present`,
+  },
   {
     key: "manual",
     label: "手動輸入",

@@ -3,6 +3,7 @@ import { SessionHeader } from "@/components/SessionHeader";
 import { aggregateSubmissions } from "@/lib/aggregate";
 import { getSession, listSubmissions } from "@/lib/store";
 import { getTemplate } from "@/lib/template";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 interface PageProps {
@@ -25,6 +26,19 @@ export default async function SessionDashboardPage({ params }: PageProps) {
         sessionName={stats.session.name}
         active="dashboard"
       />
+
+      <Link
+        href={`/session/${id}/present`}
+        className="flex cursor-pointer items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 transition hover:bg-emerald-500/15"
+      >
+        <div>
+          <p className="font-semibold text-emerald-300">開啟講師視圖</p>
+          <p className="text-sm text-slate-400">
+            投影給講師看各題統計、最多人贊成的選項，每 5 秒自動更新
+          </p>
+        </div>
+        <span className="text-emerald-400">→</span>
+      </Link>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">
