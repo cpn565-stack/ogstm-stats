@@ -1,10 +1,11 @@
+import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "OGSTM Stats | 思考圖表決統計",
   description: "課堂思考圖紅綠勾快速彙整系統",
-  metadataBase: new URL("https://stats.ogstm.com"),
+  metadataBase: new URL(getSiteUrl()),
 };
 
 export default function RootLayout({
