@@ -42,12 +42,20 @@ export function SessionHeader({
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-slate-50">{sessionName}</h1>
         </div>
-        <a
-          href={`/api/export/${sessionId}`}
-          className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
-        >
-          匯出 CSV
-        </a>
+        <div className="flex gap-2">
+          <a
+            href={`/admin/sessions/${sessionId}`}
+            className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+          >
+            後台紀錄
+          </a>
+          <a
+            href={`/api/export/${sessionId}`}
+            className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+          >
+            匯出 CSV
+          </a>
+        </div>
       </div>
 
       <nav className="flex gap-2">

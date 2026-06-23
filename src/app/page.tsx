@@ -70,6 +70,15 @@ export default function HomePage() {
         </button>
       </form>
 
+      <div className="flex justify-end">
+        <Link
+          href="/admin"
+          className="cursor-pointer text-sm text-slate-400 transition hover:text-slate-200"
+        >
+          後台歷史統計 →
+        </Link>
+      </div>
+
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-200">進行中 / 歷史課程</h2>
         {loading ? (
