@@ -1,0 +1,17 @@
+{
+  "id": "thinking_map_v1",
+  "name": "思考圖表決 v1",
+  "questions": [
+    {
+      "id": "vote_1",
+      "label": "表決 1",
+      "options": ["a", "b", "c", "d", "e", "f"]
+    },
+    {
+      "id": "vote_2",
+      "label": "表決 2",
+      "options": ["a", "b", "c", "d", "e"]
+    }
+  ],
+  "rois": {}
+}

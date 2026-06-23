@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OGSTM Stats
 
-## Getting Started
+課堂思考圖表決統計系統，部署於 [stats.ogstm.com](https://stats.ogstm.com)。
 
-First, run the development server:
+助教可在課程中透過**拍照辨識**或**手動輸入**，快速彙整各組思考圖上的紅勾（反對）與綠勾（贊成）票數，並即時查看跨組統計。
+
+## 功能
+
+- **課程 Session 管理**：建立課程、查看歷史紀錄
+- **手動輸入**：依模板逐項輸入各組紅／綠勾人數
+- **拍照輸入**：上傳思考圖照片，自動辨識（需標定模板 ROI）並可人工修正
+- **即時彙整儀表板**：跨組加總、贊成率視覺化
+- **CSV 匯出**：課後分析用
+
+## 技術棧
+
+- Next.js 16 (App Router)
+- TypeScript + Tailwind CSS
+- JSON 檔案儲存（`data/store.json`）
+
+## 本地開發
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+開啟 http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 模板設定
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+編輯 `src/data/template.json`：
 
-## Learn More
+- `questions`：兩題表決與各題選項（a, b, c…）
+- `rois`：各勾選框的相對座標 `[x, y, w, h]`（0–1），用於拍照自動辨識
 
-To learn more about Next.js, take a look at the following resources:
+提供空白思考圖模板後，可標定 ROI 啟用自動辨識。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 部署至 stats.ogstm.com
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+建議使用 Node.js 伺服器（需持久化 `data/` 目錄）。
 
-## Deploy on Vercel
+### 建置與啟動
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+npm run start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+預設 port 3000，可設定 `PORT` 環境變數。
+
+### 反向代理（Nginx 範例）
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name stats.ogstm.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### 注意事項
+
+- `data/store.json` 為執行時資料，請確保部署環境有寫入權限
+- 此專案使用檔案儲存，不適用無狀態 Serverless（如 Vercel 預設）除非改用外部資料庫
+
+## 專案結構
+
+```
+src/
+├── app/                  # 頁面與 API
+├── components/           # UI 元件
+├── data/template.json    # 思考圖模板設定
+└── lib/                  # 儲存、彙整、辨識邏輯
+```
+
+## License
+
+Private — OGSTM
