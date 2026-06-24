@@ -10,7 +10,6 @@ export function aggregateSubmissions(
   session: Session,
   template: ThinkingMapTemplate,
   submissions: Submission[],
-  totalGroups = 12,
 ) {
   const questions: AggregatedQuestion[] = template.questions.map((question) => {
     const options: AggregatedOption[] = question.options.map((option) => {
@@ -47,7 +46,6 @@ export function aggregateSubmissions(
     template,
     submissions,
     completedGroups: submissions.length,
-    totalGroups,
     questions,
   };
 }

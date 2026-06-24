@@ -1,6 +1,9 @@
 "use client";
 
+import { QuestionPhasePicker } from "@/components/QuestionPhasePicker";
 import { VoteCounter } from "@/components/VoteCounter";
+import { apiPath } from "@/lib/paths";
+import { emptyVotesForQuestion } from "@/lib/template";
 import type { SubmissionVotes, ThinkingMapTemplate } from "@/lib/types";
 import { useState } from "react";
 
@@ -8,7 +11,6 @@ interface ManualInputFormProps {
   sessionId: string;
   template: ThinkingMapTemplate;
   initialGroupId?: string;
-  initialVotes?: SubmissionVotes;
   onSaved?: (groupId: string) => void;
 }
 
@@ -16,23 +18,33 @@ export function ManualInputForm({
   sessionId,
   template,
   initialGroupId = "",
-  initialVotes,
   onSaved,
 }: ManualInputFormProps) {
+  const [questionId, setQuestionId] = useState(template.questions[0]?.id ?? "");
   const [groupId, setGroupId] = useState(initialGroupId);
-  const [votes, setVotes] = useState<SubmissionVotes>(
-    initialVotes ??
-      Object.fromEntries(
-        template.questions.map((question) => [
-          question.id,
-          Object.fromEntries(
-            question.options.map((option) => [option, { green: 0, red: 0 }]),
-          ),
-        ]),
-      ),
-  );
+  const [votes, setVotes] = useState<SubmissionVotes>(() => {
+    const initial: SubmissionVotes = {};
+    for (const question of template.questions) {
+      initial[question.id] = emptyVotesForQuestion(template, question.id);
+    }
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  const activeQuestion = template.questions.find(
+    (question) => question.id === questionId,
+  );
+
+  function handleQuestionChange(nextQuestionId: string) {
+    setQuestionId(nextQuestionId);
+    setVotes((current) => ({
+      ...current,
+      [nextQuestionId]:
+        current[nextQuestionId] ??
+        emptyVotesForQuestion(template, nextQuestionId),
+    }));
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -40,19 +52,28 @@ export function ManualInputForm({
       setMessage("請輸入組別");
       return;
     }
+    if (!activeQuestion) {
+      setMessage("請選擇題目");
+      return;
+    }
 
     setSaving(true);
     setMessage("");
 
-    const response = await fetch(`/api/sessions/${sessionId}/submissions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        groupId: groupId.trim(),
-        votes,
-        source: "manual",
-      }),
-    });
+    const response = await fetch(
+      apiPath(`/api/sessions/${sessionId}/submissions`),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: groupId.trim(),
+          votes: {
+            [questionId]: votes[questionId],
+          },
+          source: "manual",
+        }),
+      },
+    );
 
     setSaving(false);
 
@@ -62,12 +83,24 @@ export function ManualInputForm({
       return;
     }
 
-    setMessage("已儲存");
+    setMessage(`已儲存（${activeQuestion.shortLabel ?? questionId}）`);
+    setVotes((current) => ({
+      ...current,
+      [questionId]: emptyVotesForQuestion(template, questionId),
+    }));
     onSaved?.(groupId.trim());
   }
 
+  if (!activeQuestion) return null;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <QuestionPhasePicker
+        questions={template.questions}
+        selectedId={questionId}
+        onChange={handleQuestionChange}
+      />
+
       <label className="block space-y-2">
         <span className="text-sm text-slate-400">組別</span>
         <input
@@ -78,35 +111,34 @@ export function ManualInputForm({
         />
       </label>
 
-      {template.questions.map((question) => (
-        <section key={question.id} className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-100">
-            {question.label}
-          </h2>
-          <div className="space-y-2">
-            {question.options.map((option) => {
-              const counts = votes[question.id][option];
-              return (
-                <VoteCounter
-                  key={option}
-                  label={option}
-                  green={counts.green}
-                  red={counts.red}
-                  onChange={(green, red) =>
-                    setVotes((current) => ({
-                      ...current,
-                      [question.id]: {
-                        ...current[question.id],
-                        [option]: { green, red },
-                      },
-                    }))
-                  }
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-slate-100">
+          {activeQuestion.label}
+        </h2>
+        <div className="space-y-2">
+          {activeQuestion.options.map((option) => {
+            const counts = votes[questionId][option];
+            return (
+              <VoteCounter
+                key={option}
+                label={option}
+                description={activeQuestion.optionLabels?.[option]}
+                green={counts.green}
+                red={counts.red}
+                onChange={(green, red) =>
+                  setVotes((current) => ({
+                    ...current,
+                    [questionId]: {
+                      ...current[questionId],
+                      [option]: { green, red },
+                    },
+                  }))
+                }
+              />
+            );
+          })}
+        </div>
+      </section>
 
       <div className="flex items-center gap-4">
         <button

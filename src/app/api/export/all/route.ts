@@ -1,3 +1,4 @@
+import { requireAdminApi } from "@/lib/auth";
 import {
   buildHistoryOverview,
   flattenSubmissionRows,
@@ -6,6 +7,9 @@ import {
 import { NextResponse } from "next/server";
 
 export async function GET() {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const overview = buildHistoryOverview();
   const lines = [
     "課程,日期,組別,題目,選項,贊成(綠),反對(紅),來源,建立時間",

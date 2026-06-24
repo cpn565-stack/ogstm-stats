@@ -1,9 +1,11 @@
 "use client";
 
+import { QuestionPhasePicker } from "@/components/QuestionPhasePicker";
 import { VoteCounter } from "@/components/VoteCounter";
-import { recognizeFromImage } from "@/lib/recognize";
-import { emptyVotes, getTemplate } from "@/lib/template";
-import type { SubmissionVotes } from "@/lib/types";
+import { apiPath } from "@/lib/paths";
+import { recognizeQuestionFromImage } from "@/lib/recognize";
+import { emptyVotesForQuestion, getTemplate } from "@/lib/template";
+import type { VoteCounts } from "@/lib/types";
 import { useMemo, useState } from "react";
 
 interface PhotoInputFormProps {
@@ -13,30 +15,49 @@ interface PhotoInputFormProps {
 
 export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
   const template = useMemo(() => getTemplate(), []);
+  const [questionId, setQuestionId] = useState(template.questions[0]?.id ?? "");
   const [groupId, setGroupId] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
-  const [votes, setVotes] = useState<SubmissionVotes>(emptyVotes(template));
+  const [votes, setVotes] = useState<VoteCounts>(() =>
+    emptyVotesForQuestion(template, template.questions[0]?.id ?? ""),
+  );
   const [confidence, setConfidence] = useState(0);
   const [recognizing, setRecognizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
+  const activeQuestion = template.questions.find(
+    (question) => question.id === questionId,
+  );
+
+  function handleQuestionChange(nextQuestionId: string) {
+    setQuestionId(nextQuestionId);
+    setVotes(emptyVotesForQuestion(template, nextQuestionId));
+    setPreview(null);
+    setConfidence(0);
+    setMessage("");
+  }
+
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !activeQuestion) return;
 
     setPreview(URL.createObjectURL(file));
     setRecognizing(true);
     setMessage("");
 
     try {
-      const result = await recognizeFromImage(file, template);
+      const result = await recognizeQuestionFromImage(
+        file,
+        template,
+        questionId,
+      );
       setVotes(result.votes);
       setConfidence(result.confidence);
 
       if (result.confidence === 0) {
         setMessage(
-          "模板 ROI 尚未標定，請手動確認票數。提供空白模板後可啟用自動辨識。",
+          "模板 ROI 尚未標定，請手動確認票數。參考圖已存於 public/templates/。",
         );
       } else if (result.confidence < 0.7) {
         setMessage("辨識信心偏低，請逐項確認後再儲存。");
@@ -55,18 +76,27 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
       setMessage("請輸入組別");
       return;
     }
+    if (!activeQuestion) {
+      setMessage("請選擇題目");
+      return;
+    }
 
     setSaving(true);
-    const response = await fetch(`/api/sessions/${sessionId}/submissions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        groupId: groupId.trim(),
-        votes,
-        source: "photo",
-        confidence,
-      }),
-    });
+    const response = await fetch(
+      apiPath(`/api/sessions/${sessionId}/submissions`),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: groupId.trim(),
+          votes: {
+            [questionId]: votes,
+          },
+          source: "photo",
+          confidence,
+        }),
+      },
+    );
     setSaving(false);
 
     if (!response.ok) {
@@ -75,20 +105,27 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
       return;
     }
 
-    setMessage("已儲存");
+    setMessage(`已儲存（${activeQuestion.shortLabel ?? questionId}）`);
     onSaved?.(groupId.trim());
     setPreview(null);
-    setGroupId("");
-    setVotes(emptyVotes(template));
+    setVotes(emptyVotesForQuestion(template, questionId));
     setConfidence(0);
   }
 
+  if (!activeQuestion) return null;
+
   return (
     <div className="space-y-6">
+      <QuestionPhasePicker
+        questions={template.questions}
+        selectedId={questionId}
+        onChange={handleQuestionChange}
+      />
+
       <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-6">
         <label className="flex cursor-pointer flex-col items-center gap-3">
           <span className="text-lg font-semibold text-slate-100">
-            拍照或上傳思考圖
+            拍照或上傳思考圖（{activeQuestion.shortLabel ?? questionId}）
           </span>
           <span className="text-sm text-slate-400">
             對準整張紙拍攝，光線均勻、避免陰影
@@ -130,38 +167,34 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         />
       </label>
 
-      {template.questions.map((question) => (
-        <section key={question.id} className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-100">
-            {question.label}
-            <span className="ml-2 text-sm font-normal text-slate-500">
-              確認或修正辨識結果
-            </span>
-          </h2>
-          <div className="space-y-2">
-            {question.options.map((option) => {
-              const counts = votes[question.id][option];
-              return (
-                <VoteCounter
-                  key={option}
-                  label={option}
-                  green={counts.green}
-                  red={counts.red}
-                  onChange={(green, red) =>
-                    setVotes((current) => ({
-                      ...current,
-                      [question.id]: {
-                        ...current[question.id],
-                        [option]: { green, red },
-                      },
-                    }))
-                  }
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-slate-100">
+          {activeQuestion.label}
+          <span className="ml-2 text-sm font-normal text-slate-500">
+            確認或修正辨識結果
+          </span>
+        </h2>
+        <div className="space-y-2">
+          {activeQuestion.options.map((option) => {
+            const counts = votes[option] ?? { green: 0, red: 0 };
+            return (
+              <VoteCounter
+                key={option}
+                label={option}
+                description={activeQuestion.optionLabels?.[option]}
+                green={counts.green}
+                red={counts.red}
+                onChange={(green, red) =>
+                  setVotes((current) => ({
+                    ...current,
+                    [option]: { green, red },
+                  }))
+                }
+              />
+            );
+          })}
+        </div>
+      </section>
 
       <div className="flex items-center gap-4">
         <button

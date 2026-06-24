@@ -2,6 +2,7 @@
 
 interface VoteCounterProps {
   label: string;
+  description?: string;
   green: number;
   red: number;
   onChange: (green: number, red: number) => void;
@@ -46,12 +47,23 @@ function Stepper({
   );
 }
 
-export function VoteCounter({ label, green, red, onChange }: VoteCounterProps) {
+export function VoteCounter({
+  label,
+  description,
+  green,
+  red,
+  onChange,
+}: VoteCounterProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-3">
-      <span className="w-8 font-mono text-lg font-semibold text-slate-200">
-        {label}
-      </span>
+    <div className="flex flex-col gap-3 rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <span className="font-mono text-lg font-semibold text-slate-200">
+          {label}
+        </span>
+        {description && (
+          <p className="mt-0.5 text-sm text-slate-400">{description}</p>
+        )}
+      </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-emerald-400">贊成</span>

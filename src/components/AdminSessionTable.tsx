@@ -1,4 +1,5 @@
 import type { SessionListItem } from "@/lib/history";
+import { apiPath } from "@/lib/paths";
 import Link from "next/link";
 
 interface AdminSessionTableProps {
@@ -33,9 +34,7 @@ export function AdminSessionTable({ sessions }: AdminSessionTableProps) {
               <td className="px-4 py-3 text-slate-400">
                 {new Date(item.session.createdAt).toLocaleString("zh-TW")}
               </td>
-              <td className="px-4 py-3">
-                {item.submissionCount} / {item.totalGroups}
-              </td>
+              <td className="px-4 py-3">{item.submissionCount} 組</td>
               <td className="px-4 py-3 font-mono text-emerald-300">
                 {Object.entries(item.topApproved)
                   .filter(([, value]) => value)
@@ -51,7 +50,7 @@ export function AdminSessionTable({ sessions }: AdminSessionTableProps) {
                     詳細
                   </Link>
                   <a
-                    href={`/api/export/${item.session.id}`}
+                    href={apiPath(`/api/export/${item.session.id}`)}
                     className="cursor-pointer text-slate-400 transition hover:text-slate-200"
                   >
                     匯出

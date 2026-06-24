@@ -1,5 +1,10 @@
-import type { CheckboxROI, SubmissionVotes, ThinkingMapTemplate } from "./types";
-import { emptyVotes } from "./template";
+import type {
+  CheckboxROI,
+  SubmissionVotes,
+  ThinkingMapTemplate,
+  VoteCounts,
+} from "./types";
+import { emptyVoteCounts, emptyVotes } from "./template";
 
 interface RGB {
   r: number;
@@ -79,6 +84,7 @@ function countMarks(ratio: number) {
 export async function recognizeFromImage(
   file: File,
   template: ThinkingMapTemplate,
+  questionId?: string,
 ): Promise<{ votes: SubmissionVotes; confidence: number }> {
   const votes = emptyVotes(template);
   const rois = template.rois ?? {};
@@ -100,7 +106,11 @@ export async function recognizeFromImage(
   let checks = 0;
   let confident = 0;
 
-  for (const question of template.questions) {
+  const questions = questionId
+    ? template.questions.filter((question) => question.id === questionId)
+    : template.questions;
+
+  for (const question of questions) {
     const questionRois = rois[question.id];
     if (!questionRois) continue;
 
@@ -133,6 +143,23 @@ export async function recognizeFromImage(
 
   const confidence = checks > 0 ? confident / checks : 0;
   return { votes, confidence };
+}
+
+export async function recognizeQuestionFromImage(
+  file: File,
+  template: ThinkingMapTemplate,
+  questionId: string,
+): Promise<{ votes: VoteCounts; confidence: number }> {
+  const question = template.questions.find((item) => item.id === questionId);
+  if (!question) {
+    return { votes: {}, confidence: 0 };
+  }
+
+  const result = await recognizeFromImage(file, template, questionId);
+  return {
+    votes: result.votes[questionId] ?? emptyVoteCounts(question),
+    confidence: result.confidence,
+  };
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {

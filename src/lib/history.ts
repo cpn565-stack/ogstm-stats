@@ -1,12 +1,17 @@
 import { aggregateSubmissions } from "./aggregate";
+import { buildQuestionPresentation } from "./presenter";
 import { getSession, listSessions, listSubmissions } from "./store";
 import { getTemplate } from "./template";
-import type { Session, SessionStats, Submission } from "./types";
+import type {
+  AggregatedQuestion,
+  Session,
+  SessionStats,
+  Submission,
+} from "./types";
 
 export interface SessionListItem {
   session: Session;
   submissionCount: number;
-  totalGroups: number;
   topApproved: Record<string, string | null>;
 }
 
@@ -65,7 +70,6 @@ export function buildHistoryOverview(): HistoryOverview {
     sessionItems.push({
       session,
       submissionCount: submissions.length,
-      totalGroups: stats.totalGroups,
       topApproved: getTopApproved(stats),
     });
 
@@ -121,6 +125,117 @@ export function buildHistoryOverview(): HistoryOverview {
     historicalOptions,
     totalSessions: sessions.length,
     totalSubmissions,
+  };
+}
+
+export interface PublicQuestionSummary {
+  questionId: string;
+  label: string;
+  top5Green: Array<{
+    option: string;
+    label: string;
+    green: number;
+    rank: number;
+    tied: boolean;
+  }>;
+  top5Red: Array<{
+    option: string;
+    label: string;
+    red: number;
+    rank: number;
+    tied: boolean;
+  }>;
+}
+
+export interface PublicSummary {
+  totalSessions: number;
+  totalSubmissions: number;
+  questions: PublicQuestionSummary[];
+  highlights: string[];
+}
+
+function historicalToQuestions(
+  historicalOptions: HistoricalOptionRow[],
+  template: ReturnType<typeof getTemplate>,
+): AggregatedQuestion[] {
+  return template.questions.map((question) => ({
+    questionId: question.id,
+    label: question.label,
+    options: question.options.map((option) => {
+      const row = historicalOptions.find(
+        (item) => item.questionId === question.id && item.option === option,
+      );
+      const green = row?.totalGreen ?? 0;
+      const red = row?.totalRed ?? 0;
+      const total = green + red;
+      return {
+        option,
+        green,
+        red,
+        total,
+        greenRate: total > 0 ? Math.round((green / total) * 100) : 0,
+      };
+    }),
+  }));
+}
+
+export function buildPublicSummary(): PublicSummary {
+  const overview = buildHistoryOverview();
+  const template = getTemplate();
+  const questions = historicalToQuestions(overview.historicalOptions, template);
+  const highlights: string[] = [];
+
+  const questionSummaries: PublicQuestionSummary[] = questions.map(
+    (question) => {
+      const templateQuestion = template.questions.find(
+        (item) => item.id === question.questionId,
+      );
+      const optionLabels = templateQuestion?.optionLabels ?? {};
+      const presentation = buildQuestionPresentation(question);
+
+      const top5Green = presentation.top5Green.map((item) => ({
+        option: item.option,
+        label: optionLabels[item.option] ?? item.option,
+        green: item.green,
+        rank: item.rank,
+        tied: item.tied,
+      }));
+
+      const top5Red = presentation.top5Red.map((item) => ({
+        option: item.option,
+        label: optionLabels[item.option] ?? item.option,
+        red: item.red,
+        rank: item.rank,
+        tied: item.tied,
+      }));
+
+      const topGreen = top5Green[0];
+      const topRed = top5Red[0];
+      if (topGreen) {
+        highlights.push(
+          `${question.label}：最常見贊成為「${topGreen.label}」（${topGreen.green} 票）`,
+        );
+      }
+      if (topRed) {
+        highlights.push(
+          `${question.label}：最常見反對為「${topRed.label}」（${topRed.red} 票）`,
+        );
+      }
+
+      return {
+        questionId: question.questionId,
+        label: question.label,
+        top5Green,
+        top5Red,
+      };
+    },
+  );
+
+  return {
+    totalSessions: overview.totalSessions,
+    totalSubmissions: overview.totalSubmissions,
+    questions: questionSummaries,
+    highlights,
   };
 }
 

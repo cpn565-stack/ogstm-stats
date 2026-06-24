@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
-import type { Session, Submission } from "./types";
+import { mergeSubmissionVotes } from "./template";
+import type { Session, Submission, SubmissionVotes } from "./types";
 
 interface StoreData {
   sessions: Session[];
@@ -102,9 +103,15 @@ export function upsertSubmission(
   );
 
   if (existingIndex >= 0) {
+    const existing = store.submissions[existingIndex];
+    const mergedVotes: SubmissionVotes = mergeSubmissionVotes(
+      existing.votes,
+      input.votes,
+    );
     const updated: Submission = {
-      ...store.submissions[existingIndex],
+      ...existing,
       ...input,
+      votes: mergedVotes,
       updatedAt: now,
     };
     store.submissions[existingIndex] = updated;

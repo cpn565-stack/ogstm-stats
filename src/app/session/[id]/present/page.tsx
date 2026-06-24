@@ -11,7 +11,7 @@ interface PageProps {
 export default async function PresenterPage({ params }: PageProps) {
   const { id } = await params;
   const session = getSession(id);
-  if (!session) redirect("/");
+  if (!session) redirect("/ops");
 
   const template = getTemplate();
   const submissions = listSubmissions(id);

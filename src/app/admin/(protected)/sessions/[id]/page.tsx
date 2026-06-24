@@ -1,6 +1,7 @@
 import { GroupSubmissionTable } from "@/components/GroupSubmissionTable";
 import { StatsTable } from "@/components/StatsTable";
 import { getSessionStats } from "@/lib/history";
+import { apiPath } from "@/lib/paths";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -41,10 +42,10 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
             href={`/session/${id}/present`}
             className="cursor-pointer rounded-lg border border-emerald-500/40 px-4 py-2 text-sm text-emerald-300 transition hover:bg-emerald-500/10"
           >
-            講師視圖
+            講師口述
           </Link>
           <a
-            href={`/api/export/${id}`}
+            href={apiPath(`/api/export/${id}`)}
             className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm transition hover:bg-slate-800"
           >
             匯出 CSV

@@ -4,13 +4,62 @@
   "questions": [
     {
       "id": "vote_1",
-      "label": "表決 1",
-      "options": ["a", "b", "c", "d", "e", "f"]
+      "label": "目標 成果 SPECIFIC GOALS",
+      "shortLabel": "G",
+      "section": "a",
+      "referenceImage": "/templates/vote_1.jpg",
+      "options": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+        "m",
+        "n"
+      ],
+      "optionLabels": {
+        "a": "充分詮釋訂定的 Objective",
+        "b": "易於被傳達與溝通",
+        "c": "易於被了解",
+        "d": "易於落實",
+        "e": "明確指出須聚焦的領域",
+        "f": "能協助發展行動計劃",
+        "g": "能夠激勵與鼓舞成員",
+        "h": "有階段性規劃與進程",
+        "i": "易於後續的管理",
+        "j": "設定清楚的里程碑",
+        "k": "易於被衡量或評估",
+        "l": "基於事實而設定",
+        "m": "易於彙整",
+        "n": "並非主觀看法"
+      }
     },
     {
       "id": "vote_2",
-      "label": "表決 2",
-      "options": ["a", "b", "c", "d", "e"]
+      "label": "戰術 作法 TACTICS",
+      "shortLabel": "T",
+      "section": "a",
+      "referenceImage": "/templates/vote_2.jpg",
+      "options": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+      "optionLabels": {
+        "a": "依循前面製定的策略",
+        "b": "以行動為基礎",
+        "c": "以結果為導向",
+        "d": "能夠具體實行",
+        "e": "盤點並規劃所需資源",
+        "f": "能夠帶來具體成效",
+        "g": "專業判斷下的決策",
+        "h": "仰賴團隊共同合作",
+        "i": "有明確的取捨",
+        "j": "無或將不良後果降到最低"
+      }
     }
   ],
   "rois": {}

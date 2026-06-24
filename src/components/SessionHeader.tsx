@@ -1,3 +1,4 @@
+import { apiPath } from "@/lib/paths";
 import Link from "next/link";
 
 interface SessionHeaderProps {
@@ -10,7 +11,7 @@ const tabs = [
   { key: "dashboard", label: "彙整", href: (id: string) => `/session/${id}` },
   {
     key: "present",
-    label: "講師視圖",
+    label: "講師口述",
     href: (id: string) => `/session/${id}/present`,
   },
   {
@@ -35,22 +36,22 @@ export function SessionHeader({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link
-            href="/"
+            href="/ops"
             className="text-sm text-slate-400 transition hover:text-slate-200"
           >
-            ← 返回課程列表
+            ← 返回營運
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-slate-50">{sessionName}</h1>
         </div>
         <div className="flex gap-2">
-          <a
+          <Link
             href={`/admin/sessions/${sessionId}`}
             className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
           >
             後台紀錄
-          </a>
+          </Link>
           <a
-            href={`/api/export/${sessionId}`}
+            href={apiPath(`/api/export/${sessionId}`)}
             className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
           >
             匯出 CSV

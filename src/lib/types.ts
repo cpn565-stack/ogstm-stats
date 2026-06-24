@@ -3,7 +3,11 @@ export type VoteCounts = Record<string, { green: number; red: number }>;
 export interface VoteQuestion {
   id: string;
   label: string;
+  shortLabel?: string;
+  section?: string;
+  referenceImage?: string;
   options: string[];
+  optionLabels?: Record<string, string>;
 }
 
 export interface CheckboxROI {
@@ -63,6 +67,5 @@ export interface SessionStats {
   template: ThinkingMapTemplate;
   submissions: Submission[];
   completedGroups: number;
-  totalGroups: number;
   questions: AggregatedQuestion[];
 }

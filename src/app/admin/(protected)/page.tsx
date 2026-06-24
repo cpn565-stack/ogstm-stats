@@ -1,6 +1,7 @@
 import { AdminSessionTable } from "@/components/AdminSessionTable";
 import { HistoricalStatsTable } from "@/components/HistoricalStatsTable";
 import { buildHistoryOverview } from "@/lib/history";
+import { apiPath } from "@/lib/paths";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -9,12 +10,22 @@ export default function AdminPage() {
   return (
     <main className="space-y-10">
       <header className="space-y-2">
-        <Link
-          href="/"
-          className="text-sm text-slate-400 transition hover:text-slate-200"
-        >
-          ← 返回課程操作
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/ops"
+            className="text-sm text-slate-400 transition hover:text-slate-200"
+          >
+            ← 返回營運
+          </Link>
+          <form action={apiPath("/api/admin/logout")} method="POST">
+            <button
+              type="submit"
+              className="cursor-pointer text-sm text-slate-500 transition hover:text-slate-300"
+            >
+              登出
+            </button>
+          </form>
+        </div>
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-400">
           後台統計
         </p>
@@ -38,7 +49,7 @@ export default function AdminPage() {
         <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">
           <p className="text-sm text-slate-400">匯出</p>
           <a
-            href="/api/export/all"
+            href={apiPath("/api/export/all")}
             className="mt-2 inline-block cursor-pointer text-emerald-400 transition hover:text-emerald-300"
           >
             下載全部歷史 CSV →

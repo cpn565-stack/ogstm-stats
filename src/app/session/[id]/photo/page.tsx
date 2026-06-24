@@ -10,7 +10,7 @@ interface PageProps {
 export default async function PhotoInputPage({ params }: PageProps) {
   const { id } = await params;
   const session = getSession(id);
-  if (!session) redirect("/");
+  if (!session) redirect("/ops");
 
   return (
     <main className="space-y-8">

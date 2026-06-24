@@ -13,7 +13,7 @@ interface PageProps {
 export default async function SessionDashboardPage({ params }: PageProps) {
   const { id } = await params;
   const session = getSession(id);
-  if (!session) redirect("/");
+  if (!session) redirect("/ops");
 
   const template = getTemplate();
   const submissions = listSubmissions(id);
@@ -34,7 +34,7 @@ export default async function SessionDashboardPage({ params }: PageProps) {
         <div>
           <p className="font-semibold text-emerald-300">開啟講師視圖</p>
           <p className="text-sm text-slate-400">
-            投影給講師看各題統計、最多人贊成的選項，每 5 秒自動更新
+            手機查看各題前 5 名排行與選項文字，方便向全班口述，每 5 秒自動更新
           </p>
         </div>
         <span className="text-emerald-400">→</span>
@@ -45,10 +45,6 @@ export default async function SessionDashboardPage({ params }: PageProps) {
           <p className="text-sm text-slate-400">已完成組數</p>
           <p className="mt-1 text-3xl font-bold text-emerald-400">
             {stats.completedGroups}
-            <span className="text-lg text-slate-500">
-              {" "}
-              / {stats.totalGroups}
-            </span>
           </p>
         </div>
         <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">
