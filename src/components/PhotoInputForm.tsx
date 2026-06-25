@@ -243,9 +243,6 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
             }`}
           >
             Gemini 3.5 Flash
-            <span className="mt-0.5 block text-xs font-normal opacity-80">
-              Vertex AI
-            </span>
           </button>
           <button
             type="button"
@@ -257,9 +254,6 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
             }`}
           >
             Nemotron VL
-            <span className="mt-0.5 block text-xs font-normal opacity-80">
-              OpenRouter 免費
-            </span>
           </button>
         </div>
       </div>
@@ -382,8 +376,8 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
           <span className="text-sm text-slate-400">
             {recognizeSource === "llm"
               ? recognizeProvider === "vertex"
-                ? "Gemini"
-                : "Nemotron"
+                ? "Gemini 3.5 Flash"
+                : "Nemotron VL"
               : "本地"}
             辨識信心：{Math.round(confidence * 100)}%
           </span>
