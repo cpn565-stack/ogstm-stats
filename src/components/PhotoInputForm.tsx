@@ -30,6 +30,8 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     (question) => question.id === questionId,
   );
 
+  const roiReady = Object.keys(template.rois ?? {}).length > 0;
+
   function handleQuestionChange(nextQuestionId: string) {
     setQuestionId(nextQuestionId);
     setVotes(emptyVotesForQuestion(template, nextQuestionId));
@@ -57,7 +59,9 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
 
       if (result.confidence === 0) {
         setMessage(
-          "模板 ROI 尚未標定，請手動確認票數。參考圖已存於 public/templates/。",
+          roiReady
+            ? "無法辨識此照片，請在下方勾選後儲存。"
+            : "自動辨識尚未啟用（ROI 未標定）。照片已載入，請在下方勾選綠/紅後儲存。",
         );
       } else if (result.confidence < 0.7) {
         setMessage("辨識信心偏低，請逐項確認後再儲存。");
@@ -122,6 +126,12 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         onChange={handleQuestionChange}
       />
 
+      {!roiReady && (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          自動辨識尚未設定。可先拍照留存，再於下方手動勾選；日常建議直接用「手動輸入」較快。
+        </p>
+      )}
+
       <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-6">
         <label className="flex cursor-pointer flex-col items-center gap-3">
           <span className="text-lg font-semibold text-slate-100">
@@ -171,7 +181,7 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         <h2 className="text-xl font-semibold text-slate-100">
           {activeQuestion.label}
           <span className="ml-2 text-sm font-normal text-slate-500">
-            確認或修正辨識結果
+            勾選各選項的綠/紅
           </span>
         </h2>
         <div className="space-y-2">
@@ -180,14 +190,18 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
             return (
               <VoteCounter
                 key={option}
+                mode="checkbox"
                 label={option}
                 description={activeQuestion.optionLabels?.[option]}
-                green={counts.green}
-                red={counts.red}
+                green={counts.green > 0 ? 1 : 0}
+                red={counts.red > 0 ? 1 : 0}
                 onChange={(green, red) =>
                   setVotes((current) => ({
                     ...current,
-                    [option]: { green, red },
+                    [option]: {
+                      green: green > 0 ? 1 : 0,
+                      red: red > 0 ? 1 : 0,
+                    },
                   }))
                 }
               />
