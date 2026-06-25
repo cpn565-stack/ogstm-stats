@@ -24,7 +24,7 @@ const tabs = [
   },
   {
     key: "photo",
-    label: "拍照輸入",
+    label: "拍照",
     href: (id: string) => `/session/${id}/photo`,
   },
 ] as const;
@@ -39,6 +39,8 @@ export function SessionHeader({
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isMobileFlow = active === "manual" || active === "present";
 
   function startEdit() {
     setDraft(name);
@@ -69,16 +71,16 @@ export function SessionHeader({
   }
 
   return (
-    <header className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <header className="space-y-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
             href="/ops"
-            className="text-sm text-slate-400 transition hover:text-slate-200"
+            className="inline-flex min-h-10 items-center text-sm text-slate-400 transition hover:text-slate-200"
           >
-            ← 返回營運
+            ← 營運
           </Link>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-0.5 flex items-center gap-2">
             {editing ? (
               <input
                 ref={inputRef}
@@ -87,54 +89,68 @@ export function SessionHeader({
                 onBlur={() => void commitEdit()}
                 onKeyDown={handleKeyDown}
                 disabled={saving}
-                className="w-full max-w-md rounded-lg border border-emerald-500/60 bg-slate-900 px-3 py-1 text-2xl font-bold text-slate-50 outline-none ring-emerald-500/40 focus:ring-2"
+                className="w-full rounded-xl border border-emerald-500/60 bg-slate-900 px-3 py-2 text-xl font-bold text-slate-50 outline-none ring-emerald-500/40 focus:ring-2 sm:text-2xl"
                 autoFocus
               />
             ) : (
               <>
-                <h1 className="truncate text-2xl font-bold text-slate-50">
+                <h1 className="truncate text-xl font-bold text-slate-50 sm:text-2xl">
                   {name}
                 </h1>
                 <button
                   type="button"
                   onClick={startEdit}
                   aria-label="編輯課程名稱"
-                  className="shrink-0 rounded p-1 text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
+                  className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
                 >
-                  ✎
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="size-4"
+                    aria-hidden
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
                 </button>
               </>
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/admin/sessions/${sessionId}`}
-            className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
-          >
-            後台紀錄
-          </Link>
-          <a
-            href={apiPath(`/api/export/${sessionId}`)}
-            className="cursor-pointer rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
-          >
-            匯出 CSV
-          </a>
-        </div>
+
+        {!isMobileFlow && (
+          <div className="hidden gap-2 sm:flex">
+            <Link
+              href={`/admin/sessions/${sessionId}`}
+              className="cursor-pointer rounded-xl border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+            >
+              後台
+            </Link>
+            <a
+              href={apiPath(`/api/export/${sessionId}`)}
+              className="cursor-pointer rounded-xl border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+            >
+              CSV
+            </a>
+          </div>
+        )}
       </div>
 
-      <nav className="flex gap-2">
+      <nav className="-mx-1 flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => {
           const isActive = tab.key === active;
           return (
             <Link
               key={tab.key}
               href={tab.href(sessionId)}
-              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+              className={`shrink-0 cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold transition duration-200 active:scale-[0.98] ${
                 isActive
                   ? "bg-emerald-500 text-slate-950"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
+                  : "bg-slate-800 text-slate-300 active:bg-slate-700"
+              } ${isMobileFlow ? "min-h-11" : ""}`}
             >
               {tab.label}
             </Link>

@@ -36,6 +36,13 @@ export function ManualInputForm({
     (question) => question.id === questionId,
   );
 
+  const markedCount = activeQuestion
+    ? activeQuestion.options.filter((option) => {
+        const counts = votes[questionId][option];
+        return counts.green > 0 || counts.red > 0;
+      }).length
+    : 0;
+
   function handleQuestionChange(nextQuestionId: string) {
     setQuestionId(nextQuestionId);
     setVotes((current) => ({
@@ -83,7 +90,7 @@ export function ManualInputForm({
       return;
     }
 
-    setMessage(`已儲存（${activeQuestion.shortLabel ?? questionId}）`);
+    setMessage(`已儲存 ${activeQuestion.shortLabel ?? questionId} · 第 ${groupId.trim()} 組`);
     setVotes((current) => ({
       ...current,
       [questionId]: emptyVotesForQuestion(template, questionId),
@@ -94,73 +101,98 @@ export function ManualInputForm({
   if (!activeQuestion) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <QuestionPhasePicker
-        questions={template.questions}
-        selectedId={questionId}
-        onChange={handleQuestionChange}
-      />
-
-      <label className="block space-y-2">
-        <span className="text-sm text-slate-400">組別</span>
-        <input
-          value={groupId}
-          onChange={(event) => setGroupId(event.target.value)}
-          placeholder="例如：3"
-          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-lg outline-none ring-emerald-500/40 focus:ring-2"
+    <>
+      <form
+        id="manual-input-form"
+        onSubmit={handleSubmit}
+        className="space-y-5 pb-32"
+      >
+        <QuestionPhasePicker
+          questions={template.questions}
+          selectedId={questionId}
+          onChange={handleQuestionChange}
         />
-      </label>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-100">
-            {activeQuestion.label}
-          </h2>
-          <p className="mt-1 text-sm text-slate-400">
-            每組每個選項可勾選：{" "}
-            <span className="text-emerald-400">綠＝最重要</span>、{" "}
-            <span className="text-rose-400">紅＝最容易被忽略</span>（可都不勾）
-          </p>
-        </div>
-        <div className="space-y-2">
-          {activeQuestion.options.map((option) => {
-            const counts = votes[questionId][option];
-            return (
-              <VoteCounter
-                key={option}
-                mode="checkbox"
-                label={option}
-                description={activeQuestion.optionLabels?.[option]}
-                green={counts.green > 0 ? 1 : 0}
-                red={counts.red > 0 ? 1 : 0}
-                onChange={(green, red) =>
-                  setVotes((current) => ({
-                    ...current,
-                    [questionId]: {
-                      ...current[questionId],
-                      [option]: {
-                        green: green > 0 ? 1 : 0,
-                        red: red > 0 ? 1 : 0,
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-slate-400">組別</span>
+          <input
+            value={groupId}
+            onChange={(event) => setGroupId(event.target.value)}
+            placeholder="輸入組別數字"
+            inputMode="numeric"
+            autoComplete="off"
+            className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-5 py-4 text-2xl font-semibold outline-none ring-emerald-500/40 focus:ring-2"
+          />
+        </label>
+
+        <section className="space-y-3">
+          <div className="sticky top-0 z-[5] -mx-1 rounded-xl border border-slate-800/80 bg-slate-950/90 px-3 py-3 backdrop-blur">
+            <h2 className="text-lg font-semibold leading-snug text-slate-100">
+              {activeQuestion.label}
+            </h2>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-emerald-300">
+                綠＝最重要
+              </span>
+              <span className="rounded-full bg-rose-500/15 px-2.5 py-1 text-rose-300">
+                紅＝最易忽略
+              </span>
+              <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-400">
+                已勾 {markedCount} 項
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {activeQuestion.options.map((option) => {
+              const counts = votes[questionId][option];
+              return (
+                <VoteCounter
+                  key={option}
+                  mode="checkbox"
+                  label={option}
+                  description={activeQuestion.optionLabels?.[option]}
+                  green={counts.green > 0 ? 1 : 0}
+                  red={counts.red > 0 ? 1 : 0}
+                  onChange={(green, red) =>
+                    setVotes((current) => ({
+                      ...current,
+                      [questionId]: {
+                        ...current[questionId],
+                        [option]: {
+                          green: green > 0 ? 1 : 0,
+                          red: red > 0 ? 1 : 0,
+                        },
                       },
-                    },
-                  }))
-                }
-              />
-            );
-          })}
-        </div>
-      </section>
+                    }))
+                  }
+                />
+              );
+            })}
+          </div>
+        </section>
+      </form>
 
-      <div className="flex items-center gap-4">
-        <button
-          type="submit"
-          disabled={saving}
-          className="cursor-pointer rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? "儲存中…" : "儲存並下一組"}
-        </button>
-        {message && <p className="text-sm text-slate-400">{message}</p>}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="mx-auto max-w-5xl space-y-2">
+          {message && (
+            <p
+              className={`text-center text-sm ${message.includes("失敗") || message.includes("請輸入") ? "text-rose-400" : "text-emerald-400"}`}
+              role="status"
+            >
+              {message}
+            </p>
+          )}
+          <button
+            type="submit"
+            form="manual-input-form"
+            disabled={saving}
+            className="w-full min-h-[3.25rem] cursor-pointer rounded-2xl bg-emerald-500 text-lg font-bold text-slate-950 transition duration-200 hover:bg-emerald-400 active:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? "儲存中…" : "儲存並下一組"}
+          </button>
+        </div>
       </div>
-    </form>
+    </>
   );
 }

@@ -16,7 +16,7 @@ export default async function ManualInputPage({ params }: PageProps) {
   const template = getTemplate();
 
   return (
-    <main className="space-y-8">
+    <main className="space-y-5 sm:space-y-8">
       <SessionHeader
         sessionId={id}
         sessionName={session.name}
