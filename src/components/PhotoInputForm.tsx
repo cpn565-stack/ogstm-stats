@@ -31,6 +31,8 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const previewUrlRef = useRef<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const activeQuestion = template.questions.find(
     (question) => question.id === questionId,
@@ -212,24 +214,49 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
       </p>
 
       <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-6">
-        <label className="flex cursor-pointer flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 text-center">
           <span className="text-lg font-semibold text-slate-100">
             拍照或上傳思考圖（{activeQuestion.shortLabel ?? questionId}）
           </span>
           <span className="text-sm text-slate-400">
             對準整張紙拍攝，光線均勻、避免陰影
           </span>
+
           <input
+            ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
             onChange={handleFileChange}
             className="hidden"
           />
-          <span className="rounded-lg bg-slate-800 px-4 py-2 text-sm text-slate-200">
-            選擇照片
-          </span>
-        </label>
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          <div className="grid w-full max-w-sm grid-cols-2 gap-3">
+            <button
+              type="button"
+              disabled={recognizing}
+              onClick={() => cameraInputRef.current?.click()}
+              className="min-h-[52px] cursor-pointer rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 active:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              拍照
+            </button>
+            <button
+              type="button"
+              disabled={recognizing}
+              onClick={() => galleryInputRef.current?.click()}
+              className="min-h-[52px] cursor-pointer rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-700 active:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              選擇照片
+            </button>
+          </div>
+        </div>
         {recognizing && (
           <p className="mt-4 text-center text-sm text-slate-400">
             AI 辨識中，約需 5–15 秒…
