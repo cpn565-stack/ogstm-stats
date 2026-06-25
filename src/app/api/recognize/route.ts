@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
-/** 相容舊路徑，固定使用 OpenRouter */
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get("content-type") ?? "";
@@ -12,11 +11,13 @@ export async function POST(request: Request) {
     let imageBase64 = "";
     let mimeType = "image/jpeg";
     let questionId = "";
+    let provider: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
       const file = form.get("image");
       questionId = String(form.get("questionId") ?? "").trim();
+      provider = String(form.get("provider") ?? "").trim() || undefined;
 
       if (!(file instanceof File)) {
         return NextResponse.json({ error: "請上傳圖片" }, { status: 400 });
@@ -30,11 +31,13 @@ export async function POST(request: Request) {
         imageBase64?: string;
         mimeType?: string;
         questionId?: string;
+        provider?: string;
       };
 
       imageBase64 = body.imageBase64?.trim() ?? "";
       mimeType = body.mimeType?.trim() || "image/jpeg";
       questionId = body.questionId?.trim() ?? "";
+      provider = body.provider?.trim() || undefined;
     }
 
     if (!questionId) {
@@ -48,7 +51,7 @@ export async function POST(request: Request) {
       imageBase64,
       mimeType,
       questionId,
-      "openrouter",
+      provider,
     );
 
     return NextResponse.json(result);

@@ -10,6 +10,13 @@ import { emptyVotesForQuestion, getTemplate } from "@/lib/template";
 import type { VoteCounts } from "@/lib/types";
 import { useMemo, useRef, useState } from "react";
 
+type LlmProvider = "vertex" | "openrouter";
+
+const DEFAULT_LLM_PROVIDER: LlmProvider =
+  process.env.NEXT_PUBLIC_LLM_PROVIDER === "openrouter"
+    ? "openrouter"
+    : "vertex";
+
 interface PhotoInputFormProps {
   sessionId: string;
   onSaved?: (groupId: string) => void;
@@ -24,9 +31,14 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     emptyVotesForQuestion(template, template.questions[0]?.id ?? ""),
   );
   const [confidence, setConfidence] = useState(0);
+  const [llmProvider, setLlmProvider] =
+    useState<LlmProvider>(DEFAULT_LLM_PROVIDER);
   const [recognizeSource, setRecognizeSource] = useState<
     "llm" | "local" | null
   >(null);
+  const [recognizeProvider, setRecognizeProvider] = useState<LlmProvider | null>(
+    null,
+  );
   const [recognizing, setRecognizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -50,6 +62,7 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     setPreview(null);
     setConfidence(0);
     setRecognizeSource(null);
+    setRecognizeProvider(null);
     setMessage("");
   }
 
@@ -69,23 +82,26 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     setMessage("AI 辨識完成，請確認結果後儲存。");
   }
 
-  async function recognizeWithOpenRouter(file: File) {
+  async function recognizeWithLlm(file: File, provider: LlmProvider) {
     const { blob, mimeType } = await compressImageForUpload(file);
     const imageBase64 = await blobToBase64(blob);
 
-    const response = await fetch(apiPath("/api/recognize/openrouter"), {
+    const response = await fetch(apiPath("/api/recognize"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         questionId,
         imageBase64,
         mimeType,
+        provider,
       }),
     });
 
     const data = await readJsonResponse<{
       votes?: VoteCounts;
       confidence?: number;
+      provider?: LlmProvider;
+      model?: string;
       rawNotes?: string;
       error?: string;
     }>(response);
@@ -110,13 +126,15 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     setRecognizing(true);
     setMessage("");
     setRecognizeSource(null);
+    setRecognizeProvider(null);
 
     try {
       try {
-        const llmResult = await recognizeWithOpenRouter(file);
+        const llmResult = await recognizeWithLlm(file, llmProvider);
         setVotes(llmResult.votes ?? emptyVotesForQuestion(template, questionId));
         setConfidence(llmResult.confidence ?? 0);
         setRecognizeSource("llm");
+        setRecognizeProvider(llmResult.provider ?? llmProvider);
         setRecognitionMessage(llmResult.confidence ?? 0, llmResult.rawNotes);
         return;
       } catch (llmError) {
@@ -197,6 +215,7 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     setVotes(emptyVotesForQuestion(template, questionId));
     setConfidence(0);
     setRecognizeSource(null);
+    setRecognizeProvider(null);
   }
 
   if (!activeQuestion) return null;
@@ -209,9 +228,41 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         onChange={handleQuestionChange}
       />
 
-      <p className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100">
-        拍照後由 AI（Nemotron VL）自動預填綠/紅勾選，請務必確認後再儲存。
-      </p>
+      <div className="space-y-3 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3">
+        <p className="text-sm text-sky-100">
+          拍照後由 AI 自動預填綠/紅勾選，請務必確認後再儲存。
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setLlmProvider("vertex")}
+            className={`min-h-[44px] rounded-lg px-3 py-2 text-sm font-medium transition ${
+              llmProvider === "vertex"
+                ? "bg-sky-500 text-slate-950"
+                : "bg-slate-900/60 text-slate-300 hover:bg-slate-900"
+            }`}
+          >
+            Gemini 3.5 Flash
+            <span className="mt-0.5 block text-xs font-normal opacity-80">
+              Vertex AI
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setLlmProvider("openrouter")}
+            className={`min-h-[44px] rounded-lg px-3 py-2 text-sm font-medium transition ${
+              llmProvider === "openrouter"
+                ? "bg-sky-500 text-slate-950"
+                : "bg-slate-900/60 text-slate-300 hover:bg-slate-900"
+            }`}
+          >
+            Nemotron VL
+            <span className="mt-0.5 block text-xs font-normal opacity-80">
+              OpenRouter 免費
+            </span>
+          </button>
+        </div>
+      </div>
 
       <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-6">
         <div className="flex flex-col items-center gap-3 text-center">
@@ -329,8 +380,12 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         </button>
         {confidence > 0 && (
           <span className="text-sm text-slate-400">
-            {recognizeSource === "llm" ? "AI" : "本地"}辨識信心：
-            {Math.round(confidence * 100)}%
+            {recognizeSource === "llm"
+              ? recognizeProvider === "vertex"
+                ? "Gemini"
+                : "Nemotron"
+              : "本地"}
+            辨識信心：{Math.round(confidence * 100)}%
           </span>
         )}
       </div>
