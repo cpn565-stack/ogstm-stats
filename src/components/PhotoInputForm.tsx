@@ -2,6 +2,8 @@
 
 import { QuestionPhasePicker } from "@/components/QuestionPhasePicker";
 import { VoteCounter } from "@/components/VoteCounter";
+import { blobToBase64, compressImageForUpload } from "@/lib/compress-image";
+import { readJsonResponse } from "@/lib/fetch-json";
 import { apiPath } from "@/lib/paths";
 import { recognizeQuestionFromImage } from "@/lib/recognize";
 import { emptyVotesForQuestion, getTemplate } from "@/lib/template";
@@ -66,21 +68,25 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
   }
 
   async function recognizeWithOpenRouter(file: File) {
-    const form = new FormData();
-    form.append("image", file);
-    form.append("questionId", questionId);
+    const { blob, mimeType } = await compressImageForUpload(file);
+    const imageBase64 = await blobToBase64(blob);
 
     const response = await fetch(apiPath("/api/recognize/openrouter"), {
       method: "POST",
-      body: form,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId,
+        imageBase64,
+        mimeType,
+      }),
     });
 
-    const data = (await response.json()) as {
+    const data = await readJsonResponse<{
       votes?: VoteCounts;
       confidence?: number;
       rawNotes?: string;
       error?: string;
-    };
+    }>(response);
 
     if (!response.ok) {
       throw new Error(data.error ?? "AI 辨識失敗");
