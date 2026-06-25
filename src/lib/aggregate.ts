@@ -27,6 +27,7 @@ export function aggregateSubmissions(
       const total = green + red;
       return {
         option,
+        optionLabel: question.optionLabels?.[option],
         green,
         red,
         total,

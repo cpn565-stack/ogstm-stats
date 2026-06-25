@@ -112,25 +112,36 @@ export function ManualInputForm({
       </label>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-slate-100">
-          {activeQuestion.label}
-        </h2>
+        <div>
+          <h2 className="text-xl font-semibold text-slate-100">
+            {activeQuestion.label}
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            每組每個選項可勾選：{" "}
+            <span className="text-emerald-400">綠＝最重要</span>、{" "}
+            <span className="text-rose-400">紅＝最容易被忽略</span>（可都不勾）
+          </p>
+        </div>
         <div className="space-y-2">
           {activeQuestion.options.map((option) => {
             const counts = votes[questionId][option];
             return (
               <VoteCounter
                 key={option}
+                mode="checkbox"
                 label={option}
                 description={activeQuestion.optionLabels?.[option]}
-                green={counts.green}
-                red={counts.red}
+                green={counts.green > 0 ? 1 : 0}
+                red={counts.red > 0 ? 1 : 0}
                 onChange={(green, red) =>
                   setVotes((current) => ({
                     ...current,
                     [questionId]: {
                       ...current[questionId],
-                      [option]: { green, red },
+                      [option]: {
+                        green: green > 0 ? 1 : 0,
+                        red: red > 0 ? 1 : 0,
+                      },
                     },
                   }))
                 }

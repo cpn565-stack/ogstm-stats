@@ -50,6 +50,7 @@ export interface Session {
 
 export interface AggregatedOption {
   option: string;
+  optionLabel?: string;
   green: number;
   red: number;
   total: number;
