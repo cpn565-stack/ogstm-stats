@@ -8,7 +8,7 @@ import {
 import { getVertexAccessToken } from "@/lib/vertex-auth";
 
 const DEFAULT_MODEL = "gemini-3.5-flash";
-const DEFAULT_PROJECT = "specifique-rag-vertex-499214";
+const DEFAULT_PROJECT = "ogstm-input";
 const DEFAULT_LOCATION = "asia-southeast1";
 
 interface VertexResponse {

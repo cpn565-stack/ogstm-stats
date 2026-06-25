@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-specifique-rag-vertex-499214}"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-ogstm-input}"
 ADC_PATH="${GOOGLE_APPLICATION_CREDENTIALS:-$HOME/.config/gcloud/ogstm-application_default_credentials.json}"
 
 echo "==> OGSTM Vertex AI OAuth 設定"
