@@ -34,14 +34,20 @@ function rgbToHsv({ r, g, b }: RGB) {
   return { h, s, v };
 }
 
-function isGreen(rgb: RGB) {
+/** 空白格：高亮度、低飽和；有筆跡（藍/黑/綠/紅勾）則視為已勾選 */
+function isMarkedPixel(rgb: RGB) {
   const { h, s, v } = rgbToHsv(rgb);
-  return s > 0.2 && v > 0.2 && h >= 70 && h <= 170;
-}
 
-function isRed(rgb: RGB) {
-  const { h, s, v } = rgbToHsv(rgb);
-  return s > 0.2 && v > 0.2 && (h <= 20 || h >= 330);
+  if (v > 0.88 && s < 0.12) return false;
+  if (v > 0.78 && s < 0.08) return false;
+
+  if (v < 0.55) return true;
+  if (s > 0.18 && v < 0.92) return true;
+  if (s > 0.2 && v > 0.2 && h >= 70 && h <= 170) return true;
+  if (s > 0.2 && v > 0.2 && (h <= 20 || h >= 330)) return true;
+  if (s > 0.15 && v > 0.25 && h >= 190 && h <= 250) return true;
+
+  return false;
 }
 
 function sampleRegion(
@@ -57,28 +63,28 @@ function sampleRegion(
   const sh = Math.max(1, Math.floor(h * height));
   const data = ctx.getImageData(sx, sy, sw, sh).data;
 
-  let green = 0;
-  let red = 0;
+  let marked = 0;
   let total = 0;
 
   for (let i = 0; i < data.length; i += 4) {
     const rgb = { r: data[i], g: data[i + 1], b: data[i + 2] };
-    if (isGreen(rgb)) green += 1;
-    if (isRed(rgb)) red += 1;
+    if (isMarkedPixel(rgb)) marked += 1;
     total += 1;
   }
 
-  return {
-    greenRatio: total > 0 ? green / total : 0,
-    redRatio: total > 0 ? red / total : 0,
-  };
+  return total > 0 ? marked / total : 0;
 }
 
-function countMarks(ratio: number) {
-  if (ratio < 0.04) return 0;
-  if (ratio < 0.12) return 1;
-  if (ratio < 0.22) return 2;
-  return 3;
+const CHECK_THRESHOLD = 0.06;
+
+/** 每格只有 0 或 1 */
+function toCheckboxValue(markedRatio: number): 0 | 1 {
+  return markedRatio >= CHECK_THRESHOLD ? 1 : 0;
+}
+
+function boxConfidence(markedRatio: number): number {
+  if (markedRatio < 0.03 || markedRatio > 0.14) return 1;
+  return 0.4;
 }
 
 export async function recognizeFromImage(
@@ -118,26 +124,31 @@ export async function recognizeFromImage(
       const optionRoi = questionRois[option] as CheckboxROI | undefined;
       if (!optionRoi) continue;
 
-      const greenSample = sampleRegion(
+      const greenRatio = sampleRegion(
         ctx,
         canvas.width,
         canvas.height,
         optionRoi.green,
       );
-      const redSample = sampleRegion(
+      const redRatio = sampleRegion(
         ctx,
         canvas.width,
         canvas.height,
         optionRoi.red,
       );
 
-      const green = countMarks(greenSample.greenRatio);
-      const red = countMarks(redSample.redRatio);
+      const green = toCheckboxValue(greenRatio);
+      const red = toCheckboxValue(redRatio);
       votes[question.id][option] = { green, red };
 
       checks += 1;
-      const spread = Math.abs(greenSample.greenRatio - redSample.redRatio);
-      if (spread > 0.05 || (green === 0 && red === 0)) confident += 1;
+      const greenConf = boxConfidence(greenRatio);
+      const redConf = boxConfidence(redRatio);
+      const bothChecked = green === 1 && red === 1;
+      const avgConf = bothChecked
+        ? 0.2
+        : (greenConf + redConf) / 2;
+      confident += avgConf;
     }
   }
 

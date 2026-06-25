@@ -6,7 +6,7 @@ import { apiPath } from "@/lib/paths";
 import { recognizeQuestionFromImage } from "@/lib/recognize";
 import { emptyVotesForQuestion, getTemplate } from "@/lib/template";
 import type { VoteCounts } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 interface PhotoInputFormProps {
   sessionId: string;
@@ -22,9 +22,13 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
     emptyVotesForQuestion(template, template.questions[0]?.id ?? ""),
   );
   const [confidence, setConfidence] = useState(0);
+  const [recognizeSource, setRecognizeSource] = useState<
+    "llm" | "local" | null
+  >(null);
   const [recognizing, setRecognizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const previewUrlRef = useRef<string | null>(null);
 
   const activeQuestion = template.questions.find(
     (question) => question.id === questionId,
@@ -35,43 +39,109 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
   function handleQuestionChange(nextQuestionId: string) {
     setQuestionId(nextQuestionId);
     setVotes(emptyVotesForQuestion(template, nextQuestionId));
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setPreview(null);
     setConfidence(0);
+    setRecognizeSource(null);
     setMessage("");
+  }
+
+  function setRecognitionMessage(confidenceValue: number, notes?: string) {
+    if (confidenceValue < 0.6) {
+      setMessage(
+        notes
+          ? `AI 辨識信心偏低：${notes}。請逐項確認後再儲存。`
+          : "AI 辨識信心偏低，請逐項確認後再儲存。",
+      );
+      return;
+    }
+    if (confidenceValue < 0.8) {
+      setMessage("AI 已預填，請確認綠/紅勾選是否正確後再儲存。");
+      return;
+    }
+    setMessage("AI 辨識完成，請確認結果後儲存。");
+  }
+
+  async function recognizeWithOpenRouter(file: File) {
+    const form = new FormData();
+    form.append("image", file);
+    form.append("questionId", questionId);
+
+    const response = await fetch(apiPath("/api/recognize/openrouter"), {
+      method: "POST",
+      body: form,
+    });
+
+    const data = (await response.json()) as {
+      votes?: VoteCounts;
+      confidence?: number;
+      rawNotes?: string;
+      error?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "AI 辨識失敗");
+    }
+
+    return data;
   }
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !activeQuestion) return;
 
-    setPreview(URL.createObjectURL(file));
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+    const nextPreview = URL.createObjectURL(file);
+    previewUrlRef.current = nextPreview;
+    setPreview(nextPreview);
     setRecognizing(true);
     setMessage("");
+    setRecognizeSource(null);
 
     try {
-      const result = await recognizeQuestionFromImage(
+      try {
+        const llmResult = await recognizeWithOpenRouter(file);
+        setVotes(llmResult.votes ?? emptyVotesForQuestion(template, questionId));
+        setConfidence(llmResult.confidence ?? 0);
+        setRecognizeSource("llm");
+        setRecognitionMessage(llmResult.confidence ?? 0, llmResult.rawNotes);
+        return;
+      } catch (llmError) {
+        if (!roiReady) {
+          throw llmError;
+        }
+      }
+
+      const localResult = await recognizeQuestionFromImage(
         file,
         template,
         questionId,
       );
-      setVotes(result.votes);
-      setConfidence(result.confidence);
+      setVotes(localResult.votes);
+      setConfidence(localResult.confidence);
+      setRecognizeSource("local");
 
-      if (result.confidence === 0) {
-        setMessage(
-          roiReady
-            ? "無法辨識此照片，請在下方勾選後儲存。"
-            : "自動辨識尚未啟用（ROI 未標定）。照片已載入，請在下方勾選綠/紅後儲存。",
-        );
-      } else if (result.confidence < 0.7) {
-        setMessage("辨識信心偏低，請逐項確認後再儲存。");
+      if (localResult.confidence === 0) {
+        setMessage("無法辨識此照片，請在下方勾選後儲存。");
+      } else if (localResult.confidence < 0.7) {
+        setMessage("本地辨識信心偏低，請逐項確認後再儲存。");
       } else {
-        setMessage("自動辨識完成，請確認結果。");
+        setMessage("本地辨識完成，請確認結果。");
       }
-    } catch {
-      setMessage("圖片辨識失敗，請改用手動輸入票數。");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? `${error.message}。請在下方手動勾選後儲存。`
+          : "圖片辨識失敗，請在下方手動勾選後儲存。",
+      );
     } finally {
       setRecognizing(false);
+      event.target.value = "";
     }
   }
 
@@ -111,9 +181,14 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
 
     setMessage(`已儲存（${activeQuestion.shortLabel ?? questionId}）`);
     onSaved?.(groupId.trim());
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setPreview(null);
     setVotes(emptyVotesForQuestion(template, questionId));
     setConfidence(0);
+    setRecognizeSource(null);
   }
 
   if (!activeQuestion) return null;
@@ -126,11 +201,9 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         onChange={handleQuestionChange}
       />
 
-      {!roiReady && (
-        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          自動辨識尚未設定。可先拍照留存，再於下方手動勾選；日常建議直接用「手動輸入」較快。
-        </p>
-      )}
+      <p className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100">
+        拍照後由 AI（Nemotron VL）自動預填綠/紅勾選，請務必確認後再儲存。
+      </p>
 
       <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-6">
         <label className="flex cursor-pointer flex-col items-center gap-3">
@@ -152,7 +225,9 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
           </span>
         </label>
         {recognizing && (
-          <p className="mt-4 text-center text-sm text-slate-400">辨識中…</p>
+          <p className="mt-4 text-center text-sm text-slate-400">
+            AI 辨識中，約需 5–15 秒…
+          </p>
         )}
       </div>
 
@@ -221,7 +296,8 @@ export function PhotoInputForm({ sessionId, onSaved }: PhotoInputFormProps) {
         </button>
         {confidence > 0 && (
           <span className="text-sm text-slate-400">
-            辨識信心：{Math.round(confidence * 100)}%
+            {recognizeSource === "llm" ? "AI" : "本地"}辨識信心：
+            {Math.round(confidence * 100)}%
           </span>
         )}
       </div>
