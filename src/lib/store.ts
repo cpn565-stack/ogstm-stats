@@ -59,6 +59,16 @@ export function createSession(name: string, templateId: string): Session {
   return session;
 }
 
+export function updateSessionName(id: string, name: string): Session | undefined {
+  const store = ensureStore();
+  const session = store.sessions.find((s) => s.id === id);
+  if (!session) return undefined;
+  session.name = name;
+  session.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return session;
+}
+
 export function deleteSession(id: string): boolean {
   const store = ensureStore();
   const before = store.sessions.length;

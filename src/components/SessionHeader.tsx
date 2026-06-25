@@ -1,5 +1,8 @@
+"use client";
+
 import { apiPath } from "@/lib/paths";
 import Link from "next/link";
+import { useRef, useState } from "react";
 
 interface SessionHeaderProps {
   sessionId: string;
@@ -31,17 +34,78 @@ export function SessionHeader({
   sessionName,
   active = "dashboard",
 }: SessionHeaderProps) {
+  const [name, setName] = useState(sessionName);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit() {
+    setDraft(name);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
+
+  async function commitEdit() {
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === name) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    const res = await fetch(apiPath(`/api/sessions/${sessionId}`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    setSaving(false);
+    if (res.ok) setName(trimmed);
+    setEditing(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") void commitEdit();
+    if (e.key === "Escape") setEditing(false);
+  }
+
   return (
     <header className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <Link
             href="/ops"
             className="text-sm text-slate-400 transition hover:text-slate-200"
           >
             ← 返回營運
           </Link>
-          <h1 className="mt-1 text-2xl font-bold text-slate-50">{sessionName}</h1>
+          <div className="mt-1 flex items-center gap-2">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={() => void commitEdit()}
+                onKeyDown={handleKeyDown}
+                disabled={saving}
+                className="w-full max-w-md rounded-lg border border-emerald-500/60 bg-slate-900 px-3 py-1 text-2xl font-bold text-slate-50 outline-none ring-emerald-500/40 focus:ring-2"
+                autoFocus
+              />
+            ) : (
+              <>
+                <h1 className="truncate text-2xl font-bold text-slate-50">
+                  {name}
+                </h1>
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  aria-label="編輯課程名稱"
+                  className="shrink-0 rounded p-1 text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
+                >
+                  ✎
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Link
