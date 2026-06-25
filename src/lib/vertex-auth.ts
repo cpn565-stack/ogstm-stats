@@ -1,5 +1,4 @@
 import { GoogleAuth, Impersonated } from "google-auth-library";
-import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -7,10 +6,11 @@ const CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
 let cachedAuth: GoogleAuth | null = null;
 
-function ensureAdcFromEnv() {
+async function ensureAdcFromEnv() {
   const inlineJson = process.env.GOOGLE_ADC_JSON?.trim();
   if (!inlineJson) return;
 
+  const fs = await import("node:fs");
   const targetPath =
     process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim() ||
     path.join(os.tmpdir(), "ogstm-gcp-adc.json");
@@ -24,9 +24,9 @@ function ensureAdcFromEnv() {
   }
 }
 
-function getGoogleAuth() {
+async function getGoogleAuth() {
   if (!cachedAuth) {
-    ensureAdcFromEnv();
+    await ensureAdcFromEnv();
     cachedAuth = new GoogleAuth({
       scopes: [CLOUD_PLATFORM_SCOPE],
     });
@@ -59,7 +59,7 @@ export async function getVertexAccessToken(): Promise<string> {
   const impersonateAccount = process.env.GOOGLE_IMPERSONATE_SERVICE_ACCOUNT?.trim();
 
   if (impersonateAccount) {
-    const sourceAuth = getGoogleAuth();
+    const sourceAuth = await getGoogleAuth();
     const sourceClient = await sourceAuth.getClient();
     const impersonated = new Impersonated({
       sourceClient,
@@ -74,7 +74,7 @@ export async function getVertexAccessToken(): Promise<string> {
     return token.token;
   }
 
-  const auth = getGoogleAuth();
+  const auth = await getGoogleAuth();
   const client = await auth.getClient();
   const token = await client.getAccessToken();
   if (!token.token) {
