@@ -1,3 +1,4 @@
+import { CopyLiveLinkButton } from "@/components/CopyLiveLinkButton";
 import { StatsTable } from "@/components/StatsTable";
 import { SessionHeader } from "@/components/SessionHeader";
 import { aggregateSubmissions } from "@/lib/aggregate";
@@ -39,6 +40,8 @@ export default async function SessionDashboardPage({ params }: PageProps) {
         </div>
         <span className="text-emerald-400">→</span>
       </Link>
+
+      <CopyLiveLinkButton sessionId={id} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">

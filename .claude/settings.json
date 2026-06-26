@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run deploy)",
+      "Bash(bash scripts/deploy.sh)",
+      "Bash(bash scripts/deploy.sh:*)",
+      "Bash(ssh root@165.232.161.37:*)"
+    ]
+  }
+}

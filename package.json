@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "pack:deploy": "npm run build && node scripts/pack-deploy.mjs",
+    "deploy": "bash scripts/deploy.sh",
     "setup:vertex-oauth": "bash scripts/setup-vertex-oauth.sh"
   },
   "dependencies": {
