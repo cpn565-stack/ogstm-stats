@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>診次 × 護理人力互動比較</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#182230;--muted:#667085;--line:#e4e7ec;--accent:#3563e9;--accent2:#7a5af8;--soft:#eef2ff;--danger:#b42318;--good:#067647}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif}.wrap{max-width:1040px;margin:auto;padding:24px 16px 40px}h1{margin:0 0 6px;font-size:clamp(26px,4vw,40px)}p{margin:0}.sub{color:var(--muted);margin-bottom:18px}.grid{display:grid;gap:16px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px}.card,.metric,.callout{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.card h2,.section h2{margin:0 0 14px;font-size:18px}.field{margin-top:16px}.labelrow{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.badge{background:var(--soft);padding:4px 8px;border-radius:999px;font-size:13px}.inputrow{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center}input[type=range]{width:100%}input[type=number]{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit}.metric .k{color:var(--muted);font-size:13px}.metric .v{font-size:30px;font-weight:700;margin-top:5px}.metric .d{color:var(--muted);font-size:13px;margin-top:4px}.section{margin-top:18px}.bars{display:grid;gap:15px}.barrow{display:grid;grid-template-columns:86px 1fr 92px;gap:12px;align-items:center}.track{height:12px;background:#e9edf3;border-radius:999px;overflow:hidden}.fill{height:100%;border-radius:999px;background:var(--accent);transition:width .2s ease}.fill.alt{background:var(--accent2)}table{width:100%;border-collapse:collapse;min-width:620px}th,td{padding:12px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-size:13px}.tablewrap{overflow:auto}.callout{margin-top:18px;background:var(--soft);border-color:#c7d2fe}.callout strong{font-size:19px}.callout p{color:#475467;line-height:1.55;margin-top:6px}.reset{margin-top:14px;border:0;border-radius:10px;padding:10px 14px;background:#e9edf3;font:inherit;font-weight:600;cursor:pointer}.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px}@media(max-width:780px){.controls,.metrics{grid-template-columns:1fr 1fr}}@media(max-width:540px){.controls,.metrics{grid-template-columns:1fr}.barrow{grid-template-columns:70px 1fr 84px}.wrap{padding:18px 12px 30px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>診次 × 護理人力互動比較</h1>
+<p class="sub">拖動滑桿或直接輸入數字，即時比較每人負荷、Loading 與人力缺口。</p>
+<section class="grid controls">
+<div class="card"><h2>原本情境</h2>
+<div class="field"><div class="labelrow"><label for="oc">每週診次</label><span class="badge" id="ocb">27 診</span></div><div class="inputrow"><input id="oc" type="range" min="1" max="80" step="1" value="27"><input id="ocn" type="number" min="1" max="200" step="1" value="27"></div></div>
+<div class="field"><div class="labelrow"><label for="on">護理人力</label><span class="badge" id="onb">4.5 人</span></div><div class="inputrow"><input id="on" type="range" min="0.5" max="20" step="0.5" value="4.5"><input id="onn" type="number" min="0.5" max="50" step="0.5" value="4.5"></div></div>
+</div>
+<div class="card"><h2>新情境</h2>
+<div class="field"><div class="labelrow"><label for="nc">每週診次</label><span class="badge" id="ncb">34 診</span></div><div class="inputrow"><input id="nc" type="range" min="1" max="80" step="1" value="34"><input id="ncn" type="number" min="1" max="200" step="1" value="34"></div></div>
+<div class="field"><div class="labelrow"><label for="nn">護理人力</label><span class="badge" id="nnb">4 人</span></div><div class="inputrow"><input id="nn" type="range" min="0.5" max="20" step="0.5" value="4"><input id="nnn" type="number" min="0.5" max="50" step="0.5" value="4"></div></div>
+<button class="reset" id="reset" type="button">恢復預設值</button>
+</div>
+</section>
+<section class="grid metrics" aria-live="polite">
+<div class="metric"><div class="k">原本每人負擔</div><div class="v" id="oldLoad">6.00</div><div class="d">診／人／週</div></div>
+<div class="metric"><div class="k">新情境每人負擔</div><div class="v" id="newLoad">8.50</div><div class="d">診／人／週</div></div>
+<div class="metric"><div class="k">Loading 變化</div><div class="v" id="loadPct">+41.7%</div><div class="d" id="loadDiff">+2.50 診／人</div></div>
+<div class="metric"><div class="k">維持原負荷所需人力</div><div class="v" id="need">5.67</div><div class="d" id="gap">缺口 1.67 人</div></div>
+</section>
+<section class="card section"><h2>Loading 比較</h2><p class="sub" style="margin-bottom:14px">原本每位護理人員工作負荷 = 100%</p><div class="bars">
+<div class="barrow"><span>原本</span><div class="track"><div class="fill" id="oldLoadingBar"></div></div><strong id="oldLoadingText">100%</strong></div>
+<div class="barrow"><span>新情境</span><div class="track"><div class="fill alt" id="newLoadingBar"></div></div><strong id="newLoadingText">141.7%</strong></div>
+</div></section>
+<section class="card section"><h2>每人每週診次比較</h2><div class="bars">
+<div class="barrow"><span>原本</span><div class="track"><div class="fill" id="oldBar"></div></div><strong id="oldBarText">6.00 診</strong></div>
+<div class="barrow"><span>新情境</span><div class="track"><div class="fill alt" id="newBar"></div></div><strong id="newBarText">8.50 診</strong></div>
+</div></section>
+<section class="card section"><h2>比較表</h2><div class="tablewrap"><table><thead><tr><th>指標</th><th>原本</th><th>新情境</th><th>變化</th></tr></thead><tbody>
+<tr><td>每週診次</td><td id="tc1">27</td><td id="tc2">34</td><td id="tc3">+25.9%</td></tr>
+<tr><td>護理人力</td><td id="tn1">4.5</td><td id="tn2">4</td><td id="tn3">-11.1%</td></tr>
+<tr><td>Loading</td><td>100%</td><td id="tl2">141.7%</td><td id="tl3">+41.7%</td></tr>
+</tbody></table></div></section>
+<section class="callout" aria-live="polite"><strong id="headline">Loading 從 100% 上升至 141.7%</strong><p id="summary">34 診若維持原本每人 6.00 診的負荷，約需要 5.67 位護理人員；目前 4 人，缺口約 1.67 人。</p></section>
+<p class="note">註：此頁以「每週診次 ÷ 護理人力」進行簡化負荷比較，未納入單診病人數、診別複雜度、工時、支援工作與尖峰時段等因素。</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);const pairs=[['oc','ocn'],['on','onn'],['nc','ncn'],['nn','nnn']];
+const v=id=>Math.max(.01,parseFloat($(id).value)||.01);const f=(n,d=1)=>Number(n).toLocaleString('zh-TW',{minimumFractionDigits:d,maximumFractionDigits:d});const c=n=>Number(n).toLocaleString('zh-TW',{maximumFractionDigits:2});const p=(a,b)=>((a-b)/b)*100;const s=(n,d=1)=>(n>=0?'+':'')+f(n,d);
+function bind(r,n){$(r).addEventListener('input',()=>{$(n).value=$(r).value;update()});$(n).addEventListener('input',()=>{if(!Number.isFinite(parseFloat($(n).value)))return;$(r).value=Math.max(parseFloat($(r).min),Math.min(parseFloat($(r).max),parseFloat($(n).value)));update()})}
+function update(){const oc=v('oc'),on=v('on'),nc=v('nc'),nn=v('nn'),ol=oc/on,nl=nc/nn,loading=nl/ol*100,lc=loading-100,need=nc/ol,gap=need-nn;
+$('ocb').textContent=c(oc)+' 診';$('onb').textContent=c(on)+' 人';$('ncb').textContent=c(nc)+' 診';$('nnb').textContent=c(nn)+' 人';$('oldLoad').textContent=f(ol,2);$('newLoad').textContent=f(nl,2);$('loadPct').textContent=s(lc,1)+'%';$('loadDiff').textContent=s(nl-ol,2)+' 診／人';$('need').textContent=f(need,2);$('gap').textContent=gap>=0?'缺口 '+f(gap,2)+' 人':'多 '+f(Math.abs(gap),2)+' 人';
+const ml=Math.max(100,loading);$('oldLoadingBar').style.width=100/ml*100+'%';$('newLoadingBar').style.width=loading/ml*100+'%';$('oldLoadingText').textContent='100%';$('newLoadingText').textContent=f(loading,1)+'%';
+const mb=Math.max(ol,nl);$('oldBar').style.width=ol/mb*100+'%';$('newBar').style.width=nl/mb*100+'%';$('oldBarText').textContent=f(ol,2)+' 診';$('newBarText').textContent=f(nl,2)+' 診';
+$('tc1').textContent=c(oc);$('tc2').textContent=c(nc);$('tc3').textContent=s(p(nc,oc),1)+'%';$('tn1').textContent=c(on);$('tn2').textContent=c(nn);$('tn3').textContent=s(p(nn,on),1)+'%';$('tl2').textContent=f(loading,1)+'%';$('tl3').textContent=s(lc,1)+'%';$('headline').textContent='Loading 從 100% '+(loading>=100?'上升至 ':'下降至 ')+f(loading,1)+'%';$('summary').textContent=c(nc)+' 診若維持原本每人 '+f(ol,2)+' 診的負荷，約需要 '+f(need,2)+' 位護理人員；目前 '+c(nn)+' 人，'+(gap>=0?'缺口約 '+f(gap,2)+' 人。':'比需求多約 '+f(Math.abs(gap),2)+' 人。')}
+pairs.forEach(x=>bind(...x));$('reset').addEventListener('click',()=>{const d={oc:27,on:4.5,nc:34,nn:4};pairs.forEach(([r,n])=>{$(r).value=d[r];$(n).value=d[r]});update()});update();
+</script>
+</body></html>
