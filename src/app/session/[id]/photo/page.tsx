@@ -1,5 +1,6 @@
 import { PhotoInputForm } from "@/components/PhotoInputForm";
 import { SessionHeader } from "@/components/SessionHeader";
+import { requireOpsPage } from "@/lib/auth";
 import { getSession } from "@/lib/store";
 import { redirect } from "next/navigation";
 
@@ -9,6 +10,7 @@ interface PageProps {
 
 export default async function PhotoInputPage({ params }: PageProps) {
   const { id } = await params;
+  await requireOpsPage(`/session/${id}/photo`);
   const session = getSession(id);
   if (!session) redirect("/ops");
 

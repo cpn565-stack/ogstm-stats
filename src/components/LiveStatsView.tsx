@@ -1,9 +1,10 @@
 "use client";
 
-import { buildQuestionPresentation } from "@/lib/presenter";
-import { apiPath } from "@/lib/paths";
 import { RankingSection } from "@/components/RankingSection";
 import { StatsTable } from "@/components/StatsTable";
+import { readJsonResponse } from "@/lib/fetch-json";
+import { apiPath } from "@/lib/paths";
+import { buildQuestionPresentation } from "@/lib/presenter";
 import type { SessionStats, ThinkingMapTemplate } from "@/lib/types";
 import { useCallback, useEffect, useState } from "react";
 
@@ -19,21 +20,44 @@ export function LiveStatsView({
   refreshIntervalMs = 20000,
 }: LiveStatsViewProps) {
   const [stats, setStats] = useState(initialStats);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date());
+  const [offline, setOffline] = useState(false);
 
   const refresh = useCallback(async () => {
-    const response = await fetch(apiPath(`/api/sessions/${sessionId}`));
-    if (!response.ok) return;
-    const data = (await response.json()) as SessionStats;
-    setStats(data);
-    setLastUpdated(new Date());
+    try {
+      const response = await fetch(apiPath(`/api/sessions/${sessionId}`), {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        setOffline(true);
+        return;
+      }
+      const data = await readJsonResponse<SessionStats>(response);
+      setStats(data);
+      setLastUpdated(new Date());
+      setOffline(false);
+    } catch {
+      setOffline(true);
+    }
   }, [sessionId]);
 
   useEffect(() => {
     const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
       void refresh();
     }, refreshIntervalMs);
-    return () => clearInterval(timer);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void refresh();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [refresh, refreshIntervalMs]);
 
   const template = stats.template as ThinkingMapTemplate;
@@ -44,6 +68,9 @@ export function LiveStatsView({
     );
     return {
       ...presentation,
+      greenLabel:
+        templateQuestion?.greenLabel ?? question.greenLabel ?? "最重要",
+      redLabel: templateQuestion?.redLabel ?? question.redLabel ?? "最易忽略",
       optionLabels: templateQuestion?.optionLabels,
     };
   });
@@ -66,6 +93,11 @@ export function LiveStatsView({
               second: "2-digit",
             })}
           </p>
+          {offline && (
+            <p className="mt-1 text-xs text-amber-300" role="status">
+              網路連線不穩，重試中…（目前顯示最後更新資料）
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -107,14 +139,14 @@ export function LiveStatsView({
                   {presentation.label}
                 </h2>
                 <RankingSection
-                  title="綠 · 最重要（前 5，同票並列）"
+                  title={`綠 · ${presentation.greenLabel}（前 5，同票並列）`}
                   tone="green"
                   options={presentation.top5Green}
                   valueKey="green"
                   optionLabels={presentation.optionLabels}
                 />
                 <RankingSection
-                  title="紅 · 最易忽略（前 5，同票並列）"
+                  title={`紅 · ${presentation.redLabel}（前 5，同票並列）`}
                   tone="red"
                   options={presentation.top5Red}
                   valueKey="red"

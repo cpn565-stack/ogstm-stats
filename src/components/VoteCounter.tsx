@@ -5,6 +5,8 @@ interface VoteCounterProps {
   description?: string;
   green: number;
   red: number;
+  greenLabel?: string;
+  redLabel?: string;
   onChange: (green: number, red: number) => void;
   mode?: "stepper" | "checkbox";
 }
@@ -86,12 +88,21 @@ export function VoteCounter({
   description,
   green,
   red,
+  greenLabel = "最重要",
+  redLabel = "最易忽略",
   onChange,
   mode = "stepper",
 }: VoteCounterProps) {
   if (mode === "checkbox") {
+    const bothChecked = green > 0 && red > 0;
     return (
-      <article className="rounded-2xl border border-slate-700/80 bg-slate-900/70 p-4">
+      <article
+        className={`rounded-2xl border p-4 ${
+          bothChecked
+            ? "border-amber-500/50 bg-slate-900/80"
+            : "border-slate-700/80 bg-slate-900/70"
+        }`}
+      >
         <div className="mb-3 flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-800 font-mono text-lg font-bold text-emerald-400">
             {label}
@@ -110,14 +121,14 @@ export function VoteCounter({
             onToggle={() => onChange(green > 0 ? 0 : 1, red)}
             color="green"
             title="綠"
-            subtitle="最重要"
+            subtitle={greenLabel}
           />
           <MarkToggle
             checked={red > 0}
             onToggle={() => onChange(green, red > 0 ? 0 : 1)}
             color="red"
             title="紅"
-            subtitle="最易忽略"
+            subtitle={redLabel}
           />
         </div>
       </article>
@@ -136,7 +147,7 @@ export function VoteCounter({
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex items-center justify-between gap-2 sm:justify-start">
-          <span className="text-sm text-emerald-400">綠 · 最重要</span>
+          <span className="text-sm text-emerald-400">綠 · {greenLabel}</span>
           <Stepper
             value={green}
             color="green"
@@ -144,7 +155,7 @@ export function VoteCounter({
           />
         </div>
         <div className="flex items-center justify-between gap-2 sm:justify-start">
-          <span className="text-sm text-rose-400">紅 · 最易忽略</span>
+          <span className="text-sm text-rose-400">紅 · {redLabel}</span>
           <Stepper
             value={red}
             color="red"

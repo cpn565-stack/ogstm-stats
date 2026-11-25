@@ -1,5 +1,4 @@
 import type { SessionStats, Submission } from "@/lib/types";
-import { Fragment } from "react";
 
 interface GroupSubmissionTableProps {
   stats: SessionStats;

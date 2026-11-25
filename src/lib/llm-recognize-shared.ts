@@ -1,7 +1,13 @@
 import { emptyVotesForQuestion } from "@/lib/template";
-import type { ThinkingMapTemplate, VoteCounts, VoteQuestion } from "@/lib/types";
+import type {
+  ThinkingMapTemplate,
+  VoteCounts,
+  VoteQuestion,
+} from "@/lib/types";
 
 export type LlmProvider = "openrouter" | "vertex";
+
+export const UPSTREAM_TIMEOUT_MS = 25_000;
 
 export interface LlmRecognizeResult {
   votes: VoteCounts;
@@ -18,6 +24,8 @@ export function getDefaultProvider(): LlmProvider {
 }
 
 export function buildRecognizePrompt(question: VoteQuestion) {
+  const greenLabel = question.greenLabel ?? "最重要";
+  const redLabel = question.redLabel ?? "最易忽略";
   const optionLines = question.options
     .map((option) => {
       const label = question.optionLabels?.[option] ?? option;
@@ -28,7 +36,7 @@ export function buildRecognizePrompt(question: VoteQuestion) {
   return `你是 OGSTM 課堂思考圖表決的勾選框辨識助手。請分析附圖中「${question.label}」section a 的表決區。
 
 規則：
-1. 每一選項有兩個方框：左側綠框 = green，右側紅框 = red。
+1. 每一選項有兩個方框：左側綠框（${greenLabel}）= green，右側紅框（${redLabel}）= red。
 2. 每個 green/red 只能是 0（未勾）或 1（已勾）。藍筆、黑筆、打勾、塗黑都算已勾。
 3. 只辨識 section a 的選項清單，忽略 b/c 開放題與其他區塊。
 4. 同一選項的 green 和 red 可以同時為 0，但不應同時為 1（若同時為 1 請在 notes 說明）。
@@ -48,6 +56,40 @@ ${optionLines}
 votes 必須包含所有選項：${question.options.map((o) => `"${o}"`).join(", ")}`;
 }
 
+export function isTimeoutOrAbortError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = (error as { name?: string }).name ?? "";
+  return name === "TimeoutError" || name === "AbortError";
+}
+
+/**
+ * 安全解析上游 AI 服務回應文字，避免 HTML 502/504/429 觸發英文 SyntaxError 外洩至前端
+ */
+export function parseUpstreamJson<T>(
+  rawBody: string,
+  status: number,
+  providerLabel: string,
+): T {
+  const trimmed = rawBody.trim();
+  if (!trimmed) {
+    throw new Error(
+      `AI 服務（${providerLabel}）回傳空白內容 (${status})，請改選另一模型或手動勾選`,
+    );
+  }
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    if (status === 429) {
+      throw new Error(
+        `AI 服務（${providerLabel}）目前請求過於頻繁 (429)，請改選另一模型或直接手動勾選`,
+      );
+    }
+    throw new Error(
+      `AI 服務暫時無法連線 (${status})，請改選另一模型或手動勾選`,
+    );
+  }
+}
+
 export function extractJsonObject(text: string): unknown {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -59,9 +101,13 @@ export function extractJsonObject(text: string): unknown {
     const start = candidate.indexOf("{");
     const end = candidate.lastIndexOf("}");
     if (start >= 0 && end > start) {
-      return JSON.parse(candidate.slice(start, end + 1));
+      try {
+        return JSON.parse(candidate.slice(start, end + 1));
+      } catch {
+        throw new Error("AI 模型回傳格式異常，請重試、切換模型或直接手動勾選");
+      }
     }
-    throw new Error("模型回傳非 JSON 格式");
+    throw new Error("AI 模型回傳非 JSON 格式，請重試、切換模型或直接手動勾選");
   }
 }
 
@@ -92,7 +138,7 @@ export function normalizeVotes(
   }
 
   let confidence =
-    typeof payload.confidence === "number"
+    typeof payload.confidence === "number" && Number.isFinite(payload.confidence)
       ? Math.min(1, Math.max(0, payload.confidence))
       : 0.75;
 

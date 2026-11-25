@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -12,8 +11,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Fira Sans", system-ui, sans-serif;
-  --font-mono: "Fira Code", ui-monospace, monospace;
+  --font-sans: var(--font-fira-sans), "Fira Sans", system-ui, sans-serif;
+  --font-mono: var(--font-fira-code), "Fira Code", ui-monospace, monospace;
 }
 
 body {

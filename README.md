@@ -5,17 +5,18 @@
 - **子網域**：`https://stats.ogstm.com`
 - **子路徑**：`https://ogstm.com/stats`
 
-助教可在課程中透過**拍照辨識**或**手動輸入**，快速彙整各組思考圖上的紅勾（反對）與綠勾（贊成）票數，並即時查看跨組統計。
+助教可在課程中透過**拍照 AI 辨識**或**手動勾選**，快速彙整各組思考圖上的 0/1 紅綠勾選（G 卷：綠＝最重要、紅＝最易忽略；T 卷：綠＝最重要、紅＝最不易執行），並即時查看跨組排行與統計。
 
 ## 功能
 
-- **課程 Session 管理**：建立課程、查看歷史紀錄
-- **手動輸入**：依模板逐項輸入各組紅／綠勾人數
-- **拍照輸入**：上傳思考圖照片，自動辨識（需標定模板 ROI）並可人工修正
-- **即時彙整儀表板**：跨組加總、贊成率視覺化
-- **講師視圖**：大字體投影介面，顯示各題最多人贊成／反對的選項，自動更新
-- **後台歷史統計**：保留各場次各組選項明細，支援跨場次歷史加總與 CSV 匯出
-- **CSV 匯出**：課後分析用
+- **分層權限與免登入投影**：公開首頁 `/` 僅顯示跨場次加總；助教透過 `/ops/login` 進入營運區；團隊透過 `/admin/login` 管理全站與刪除；講師憑 `/session/[id]/present` 與 `/session/[id]/live` 免登入即時查看排行
+- **課程 Session 管理**：建立課程、編輯名稱、查看歷史紀錄
+- **手動輸入**：依模板逐項勾選各組綠／紅框（自動偵測既有組別防誤覆蓋）
+- **拍照輸入**：拍攝思考圖由 Vertex AI Gemini / OpenRouter 預填勾選並經人工確認後儲存
+- **即時彙整儀表板**：跨組加總、綠佔比視覺化
+- **講師視圖**：大字體口述與即時投影介面，顯示各題前 5 名（含同票並列），支援斷網重試與背景暫停輪詢
+- **後台歷史統計**：保留各場次各組選項明細，支援跨場次歷史加總與 RFC 5987 中文檔名 CSV 匯出
+- **原子儲存與自動復原**：`data/store.json` 採同目錄暫存檔原子替換與 `.bak` 損毀自動復原
 
 ## 技術棧
 
@@ -84,6 +85,8 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
@@ -105,6 +108,8 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```

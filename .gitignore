@@ -40,8 +40,17 @@ yarn-error.log*
 # vercel
 .vercel
 
-# runtime session data
-/data/store.json
+# runtime session data & local databases
+/data/*.json
+/data/*.bak
+/data/*.tmp
+*.sqlite
+*.sqlite3
+*.db
+
+# deploy artifacts
+/deploy
+ogstm-stats-deploy.tar.gz
 
 # typescript
 *.tsbuildinfo

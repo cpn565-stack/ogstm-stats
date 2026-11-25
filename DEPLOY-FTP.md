@@ -26,8 +26,15 @@ cat > .env.production.local << 'EOF'
 NEXT_PUBLIC_SITE_URL=https://ogstm.com
 NEXT_PUBLIC_BASE_PATH=/stats
 NEXT_PUBLIC_MAIN_SITE_URL=https://ogstm.com
-ADMIN_PASSWORD=你的強密碼
-ADMIN_SESSION_SECRET=隨機長字串
+NEXT_PUBLIC_LLM_PROVIDER=vertex
+LLM_PROVIDER=vertex
+ADMIN_PASSWORD=你的管理員強密碼
+OPS_PASSWORD=你的助教營運密碼（選填，留空則共用 ADMIN_PASSWORD）
+ADMIN_SESSION_SECRET=至少32字元隨機長字串
+OPENROUTER_API_KEY=選填OpenRouter金鑰
+GOOGLE_CLOUD_PROJECT=ogstm-input
+GOOGLE_CLOUD_LOCATION=asia-southeast1
+VERTEX_GEMINI_MODEL=gemini-3.5-flash
 EOF
 
 npm run build

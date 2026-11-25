@@ -1,36 +1,59 @@
 "use client";
 
-import { apiPath, appPath } from "@/lib/paths";
+import { readJsonResponse } from "@/lib/fetch-json";
+import { apiPath, sanitizeNextPath } from "@/lib/paths";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function AdminLoginForm({ nextPath }: { nextPath?: string }) {
+interface AdminLoginFormProps {
+  nextPath?: string;
+  mode?: "admin" | "ops";
+}
+
+export function AdminLoginForm({
+  nextPath,
+  mode = "admin",
+}: AdminLoginFormProps) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const endpoint = apiPath(
+    mode === "ops" ? "/api/ops/login" : "/api/admin/login",
+  );
+  const fallbackPath = mode === "ops" ? "/ops" : "/admin";
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");
 
-    const response = await fetch(apiPath("/api/admin/login"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    setLoading(false);
+      const data = await readJsonResponse<{ ok?: boolean; error?: string }>(
+        response,
+      );
 
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "登入失敗");
-      return;
+      if (!response.ok) {
+        setError(data.error ?? "登入失敗");
+        return;
+      }
+
+      router.push(sanitizeNextPath(nextPath, fallbackPath));
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "網路連線異常，請稍後再試",
+      );
+    } finally {
+      setLoading(false);
     }
-
-    router.push(appPath(nextPath?.startsWith("/") ? nextPath : "/admin"));
-    router.refresh();
   }
 
   return (

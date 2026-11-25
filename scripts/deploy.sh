@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 一鍵部署到 VPS：備份 store.json → git pull → npm ci → build → pm2 restart
+# 一鍵部署到 VPS：備份 store.json（保留最新 30 份）→ git pull → npm ci → test & build → 驗證 BUILD_ID → pm2 restart
 # 用法：npm run deploy
 # 可用環境變數覆寫：DEPLOY_HOST、DEPLOY_USER、DEPLOY_DIR、PM2_NAME
 set -euo pipefail
@@ -19,15 +19,21 @@ ssh "${DEPLOY_SSH_USER}@${DEPLOY_HOST}" "sudo -u ${DEPLOY_USER} bash -lc '
   cd \"${DEPLOY_DIR}\"
   mkdir -p \"${BACKUP_DIR}\"
   if [ -f data/store.json ]; then
-    cp data/store.json \"${BACKUP_DIR}/store-deploy-\$(date +%F-%H%M%S).json\"
-    echo \"  ✓ 已備份 store.json\"
+    BACKUP_FILE=\"${BACKUP_DIR}/store-deploy-\$(date +%F-%H%M%S).json\"
+    cp data/store.json \"\${BACKUP_FILE}\"
+    echo \"  ✓ 已備份 store.json -> \${BACKUP_FILE}\"
+    ls -1t \"${BACKUP_DIR}\"/store-deploy-*.json 2>/dev/null | tail -n +31 | while IFS= read -r old_bak; do
+      rm -f -- \"\${old_bak}\"
+    done
   fi
   git fetch origin
   git checkout ${BRANCH}
   git reset --hard origin/${BRANCH}
   npm ci
+  npm test
   npm run build
-  pm2 restart ${PM2_NAME}
+  test -f .next/BUILD_ID
+  pm2 restart ${PM2_NAME} --update-env
   echo \"  ✓ 部署完成\"
 '"
 

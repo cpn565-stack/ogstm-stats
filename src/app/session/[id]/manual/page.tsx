@@ -1,5 +1,6 @@
 import { ManualInputForm } from "@/components/ManualInputForm";
 import { SessionHeader } from "@/components/SessionHeader";
+import { requireOpsPage } from "@/lib/auth";
 import { getSession } from "@/lib/store";
 import { getTemplate } from "@/lib/template";
 import { redirect } from "next/navigation";
@@ -10,6 +11,7 @@ interface PageProps {
 
 export default async function ManualInputPage({ params }: PageProps) {
   const { id } = await params;
+  await requireOpsPage(`/session/${id}/manual`);
   const session = getSession(id);
   if (!session) redirect("/ops");
 

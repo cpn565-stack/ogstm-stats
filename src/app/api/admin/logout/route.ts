@@ -1,11 +1,25 @@
-import { ADMIN_COOKIE } from "@/lib/auth";
+import { ADMIN_COOKIE, OPS_COOKIE, adminCookieOptions } from "@/lib/auth";
+import { resolveRequestOrigin, verifySameOrigin } from "@/lib/http";
 import { appPath } from "@/lib/paths";
-import { getSiteUrl } from "@/lib/site";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const csrfDenied = verifySameOrigin(request);
+  if (csrfDenied) return csrfDenied;
+
   const cookieStore = await cookies();
-  cookieStore.delete(ADMIN_COOKIE);
-  return NextResponse.redirect(`${getSiteUrl()}${appPath("/admin/login")}`);
+  const expireOpts = adminCookieOptions(request, 0);
+  cookieStore.set(ADMIN_COOKIE, "", expireOpts);
+  cookieStore.set(OPS_COOKIE, "", expireOpts);
+  if (expireOpts.path !== "/") {
+    cookieStore.set(ADMIN_COOKIE, "", { ...expireOpts, path: "/" });
+    cookieStore.set(OPS_COOKIE, "", { ...expireOpts, path: "/" });
+  }
+
+  const target = new URL(
+    appPath("/admin/login"),
+    resolveRequestOrigin(request),
+  );
+  return NextResponse.redirect(target, { status: 303 });
 }

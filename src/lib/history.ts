@@ -1,6 +1,6 @@
 import { aggregateSubmissions } from "./aggregate";
 import { buildQuestionPresentation } from "./presenter";
-import { getSession, listSessions, listSubmissions } from "./store";
+import { getStoreSnapshot, type StoreData } from "./store";
 import { getTemplate } from "./template";
 import type {
   AggregatedQuestion,
@@ -19,6 +19,7 @@ export interface HistoricalOptionRow {
   questionId: string;
   questionLabel: string;
   option: string;
+  optionLabel?: string;
   totalGreen: number;
   totalRed: number;
   totalVotes: number;
@@ -43,16 +44,38 @@ function getTopApproved(stats: SessionStats): Record<string, string | null> {
   return result;
 }
 
-export function getSessionStats(sessionId: string): SessionStats | null {
-  const session = getSession(sessionId);
+export function getSessionStats(
+  sessionId: string,
+  snapshot: StoreData = getStoreSnapshot(),
+): SessionStats | null {
+  const session = snapshot.sessions.find((item) => item.id === sessionId);
   if (!session) return null;
   const template = getTemplate();
-  const submissions = listSubmissions(sessionId);
+  const submissions = snapshot.submissions
+    .filter((sub) => sub.sessionId === sessionId)
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
   return aggregateSubmissions(session, template, submissions);
 }
 
-export function buildHistoryOverview(): HistoryOverview {
-  const sessions = listSessions();
+export function buildHistoryOverview(
+  snapshot: StoreData = getStoreSnapshot(),
+): HistoryOverview {
+  const sessions = [...snapshot.sessions].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+  const submissionsBySession = new Map<string, Submission[]>();
+  for (const sub of snapshot.submissions) {
+    const bucket = submissionsBySession.get(sub.sessionId);
+    if (bucket) {
+      bucket.push(sub);
+    } else {
+      submissionsBySession.set(sub.sessionId, [sub]);
+    }
+  }
+
   const template = getTemplate();
   const sessionItems: SessionListItem[] = [];
   const historicalMap = new Map<
@@ -60,10 +83,14 @@ export function buildHistoryOverview(): HistoryOverview {
     HistoricalOptionRow & { sessionIds: Set<string> }
   >();
 
+  // 即使尚無任何場次或票數，預先初始化模板選項（若有場次則逐場累加）
   let totalSubmissions = 0;
 
   for (const session of sessions) {
-    const submissions = listSubmissions(session.id);
+    const submissions = (submissionsBySession.get(session.id) ?? []).sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
     totalSubmissions += submissions.length;
     const stats = aggregateSubmissions(session, template, submissions);
 
@@ -87,6 +114,7 @@ export function buildHistoryOverview(): HistoryOverview {
             questionId: question.questionId,
             questionLabel: question.label,
             option: option.option,
+            optionLabel: option.optionLabel,
             totalGreen: option.green,
             totalRed: option.red,
             totalVotes: option.total,
@@ -106,6 +134,7 @@ export function buildHistoryOverview(): HistoryOverview {
         questionId: row.questionId,
         questionLabel: row.questionLabel,
         option: row.option,
+        optionLabel: row.optionLabel,
         totalGreen: row.totalGreen,
         totalRed: row.totalRed,
         totalVotes: row.totalVotes,
@@ -131,6 +160,8 @@ export function buildHistoryOverview(): HistoryOverview {
 export interface PublicQuestionSummary {
   questionId: string;
   label: string;
+  greenLabel: string;
+  redLabel: string;
   top5Green: Array<{
     option: string;
     label: string;
@@ -161,6 +192,8 @@ function historicalToQuestions(
   return template.questions.map((question) => ({
     questionId: question.id,
     label: question.label,
+    greenLabel: question.greenLabel ?? "最重要",
+    redLabel: question.redLabel ?? "最易忽略",
     options: question.options.map((option) => {
       const row = historicalOptions.find(
         (item) => item.questionId === question.id && item.option === option,
@@ -170,6 +203,7 @@ function historicalToQuestions(
       const total = green + red;
       return {
         option,
+        optionLabel: question.optionLabels?.[option],
         green,
         red,
         total,
@@ -179,8 +213,8 @@ function historicalToQuestions(
   }));
 }
 
-export function buildPublicSummary(): PublicSummary {
-  const overview = buildHistoryOverview();
+export function buildPublicSummary(snapshot?: StoreData): PublicSummary {
+  const overview = buildHistoryOverview(snapshot);
   const template = getTemplate();
   const questions = historicalToQuestions(overview.historicalOptions, template);
   const highlights: string[] = [];
@@ -191,6 +225,8 @@ export function buildPublicSummary(): PublicSummary {
         (item) => item.id === question.questionId,
       );
       const optionLabels = templateQuestion?.optionLabels ?? {};
+      const greenLabel = templateQuestion?.greenLabel ?? "最重要";
+      const redLabel = templateQuestion?.redLabel ?? "最易忽略";
       const presentation = buildQuestionPresentation(question);
 
       const top5Green = presentation.top5Green.map((item) => ({
@@ -213,18 +249,20 @@ export function buildPublicSummary(): PublicSummary {
       const topRed = top5Red[0];
       if (topGreen) {
         highlights.push(
-          `${question.label}：最常見贊成為「${topGreen.label}」（${topGreen.green} 票）`,
+          `${question.label}：最常勾選「${greenLabel}」為「${topGreen.label}」（${topGreen.green} 票）`,
         );
       }
       if (topRed) {
         highlights.push(
-          `${question.label}：最常見反對為「${topRed.label}」（${topRed.red} 票）`,
+          `${question.label}：最常勾選「${redLabel}」為「${topRed.label}」（${topRed.red} 票）`,
         );
       }
 
       return {
         questionId: question.questionId,
         label: question.label,
+        greenLabel,
+        redLabel,
         top5Green,
         top5Red,
       };

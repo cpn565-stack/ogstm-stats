@@ -8,6 +8,10 @@
       "shortLabel": "G",
       "section": "a",
       "referenceImage": "/templates/vote_1.jpg",
+      "greenLabel": "最重要",
+      "redLabel": "最易忽略",
+      "maxGreen": 5,
+      "maxRed": 5,
       "options": [
         "a",
         "b",
@@ -47,6 +51,10 @@
       "shortLabel": "T",
       "section": "a",
       "referenceImage": "/templates/vote_2.jpg",
+      "greenLabel": "最重要",
+      "redLabel": "最不易執行",
+      "maxGreen": 5,
+      "maxRed": 5,
       "options": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
       "optionLabels": {
         "a": "依循前面製定的策略",

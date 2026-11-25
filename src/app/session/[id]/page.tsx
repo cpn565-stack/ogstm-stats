@@ -2,6 +2,7 @@ import { CopyLiveLinkButton } from "@/components/CopyLiveLinkButton";
 import { StatsTable } from "@/components/StatsTable";
 import { SessionHeader } from "@/components/SessionHeader";
 import { aggregateSubmissions } from "@/lib/aggregate";
+import { requireOpsPage } from "@/lib/auth";
 import { getSession, listSubmissions } from "@/lib/store";
 import { getTemplate } from "@/lib/template";
 import Link from "next/link";
@@ -13,6 +14,7 @@ interface PageProps {
 
 export default async function SessionDashboardPage({ params }: PageProps) {
   const { id } = await params;
+  await requireOpsPage(`/session/${id}`);
   const session = getSession(id);
   if (!session) redirect("/ops");
 

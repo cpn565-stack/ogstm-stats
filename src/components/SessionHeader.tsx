@@ -55,14 +55,19 @@ export function SessionHeader({
       return;
     }
     setSaving(true);
-    const res = await fetch(apiPath(`/api/sessions/${sessionId}`), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: trimmed }),
-    });
-    setSaving(false);
-    if (res.ok) setName(trimmed);
-    setEditing(false);
+    try {
+      const res = await fetch(apiPath(`/api/sessions/${sessionId}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (res.ok) setName(trimmed);
+    } catch {
+      // keep previous name on network error
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

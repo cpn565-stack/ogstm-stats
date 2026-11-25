@@ -6,6 +6,10 @@ export interface VoteQuestion {
   shortLabel?: string;
   section?: string;
   referenceImage?: string;
+  greenLabel?: string;
+  redLabel?: string;
+  maxGreen?: number;
+  maxRed?: number;
   options: string[];
   optionLabels?: Record<string, string>;
 }
@@ -60,6 +64,8 @@ export interface AggregatedOption {
 export interface AggregatedQuestion {
   questionId: string;
   label: string;
+  greenLabel?: string;
+  redLabel?: string;
   options: AggregatedOption[];
 }
 

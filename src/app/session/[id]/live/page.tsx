@@ -1,7 +1,13 @@
 import { LiveStatsView } from "@/components/LiveStatsView";
-import { aggregateSubmissions } from "@/lib/aggregate";
+import {
+  aggregateSubmissions,
+  redactStatsForPublicLink,
+} from "@/lib/aggregate";
+import { getOpsSession } from "@/lib/auth";
 import { getSession, listSubmissions } from "@/lib/store";
 import { getTemplate } from "@/lib/template";
+
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,6 +31,12 @@ export default async function LiveStatsPage({ params }: PageProps) {
   const template = getTemplate();
   const submissions = listSubmissions(id);
   const stats = aggregateSubmissions(session, template, submissions);
+  const isAuthenticated = await getOpsSession();
 
-  return <LiveStatsView sessionId={id} initialStats={stats} />;
+  return (
+    <LiveStatsView
+      sessionId={id}
+      initialStats={isAuthenticated ? stats : redactStatsForPublicLink(stats)}
+    />
+  );
 }
